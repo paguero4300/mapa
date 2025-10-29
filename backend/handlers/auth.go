@@ -3,12 +3,26 @@ package handlers
 import (
 	"log"
 	"net/http"
+	"os"
+	"strings"
 	"time"
 	"traccar-login/models"
 	"traccar-login/services"
 
 	"github.com/gin-gonic/gin"
 )
+
+// maskEmail oculta parte del email para logs
+func maskEmail(email string) string {
+	if len(email) < 4 {
+		return "***"
+	}
+	parts := strings.Split(email, "@")
+	if len(parts) != 2 {
+		return "***"
+	}
+	return parts[0][:2] + "***@" + parts[1]
+}
 
 type AuthHandler struct {
 	traccarService *services.TraccarService
@@ -30,7 +44,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		return
 	}
 
-	log.Printf("📧 [AUTH] Intentando login para email: %s", req.Email)
+	log.Printf("📧 [AUTH] Intentando login para email: %s", maskEmail(req.Email))
 
 	// Autenticar con Traccar
 	loginResponse, err := h.traccarService.Login(req.Email, req.Password)
@@ -64,7 +78,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 				Path:     "/",
 				Domain:   "localhost",
 				MaxAge:   86400,
-				Secure:   false,
+				Secure:   os.Getenv("ENV") == "production",
 				HttpOnly: true,
 				SameSite: http.SameSiteLaxMode,
 			}

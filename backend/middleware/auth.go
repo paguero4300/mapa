@@ -3,6 +3,7 @@ package middleware
 import (
 	"log"
 	"net/http"
+	"os"
 	"strings"
 	"traccar-login/config"
 	"traccar-login/services"
@@ -147,12 +148,22 @@ func AuthMiddleware(cfg *config.Config) gin.HandlerFunc {
 func CORSMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		origin := c.GetHeader("Origin")
-		// Permitir orígenes específicos para desarrollo y producción
-		allowedOrigins := []string{
-			"http://localhost:8080",
-			"http://127.0.0.1:8080",
-			"http://localhost:3000",
-			"http://127.0.0.1:3000",
+
+		// Configuración dinámica según entorno
+		var allowedOrigins []string
+		if os.Getenv("ENV") == "production" {
+			// En producción, solo permitir dominios específicos
+			allowedOrigins = []string{
+				"https://tudominio.com", // Reemplazar con dominio real
+			}
+		} else {
+			// En desarrollo, permitir localhost
+			allowedOrigins = []string{
+				"http://localhost:8080",
+				"http://127.0.0.1:8080",
+				"http://localhost:3000",
+				"http://127.0.0.1:3000",
+			}
 		}
 
 		// Verificar si el origen está permitido

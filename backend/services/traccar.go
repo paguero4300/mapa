@@ -18,6 +18,18 @@ type TraccarService struct {
 	Client  *http.Client
 }
 
+// maskEmail oculta parte del email para logs
+func maskEmail(email string) string {
+	if len(email) < 4 {
+		return "***"
+	}
+	parts := strings.Split(email, "@")
+	if len(parts) != 2 {
+		return "***"
+	}
+	return parts[0][:2] + "***@" + parts[1]
+}
+
 // Variable global para almacenar la sesión activa
 var globalSession *TraccarService
 
@@ -62,7 +74,7 @@ func (s *TraccarService) Login(email, password string) (*models.LoginResponse, e
 	formData.Set("password", password)
 
 	log.Printf("📡 [TRACCAR] Enviando request a: %s/session", s.BaseURL)
-	log.Printf("📡 [TRACCAR] Datos: email=%s, password=[HIDDEN]", email)
+	log.Printf("📡 [TRACCAR] Datos: email=%s, password=[HIDDEN]", maskEmail(email))
 
 	// Crear request con form data
 	req, err := http.NewRequest("POST", s.BaseURL+"/session", strings.NewReader(formData.Encode()))

@@ -245,3 +245,95 @@
 .leaflet-tooltip {
     z-index: 1001 !important;
 }
+
+/* Mejoras específicas para el formulario de login */
+.login-container {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+}
+
+.login-form-container {
+    backdrop-filter: blur(10px);
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.login-input:focus {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.15);
+}
+
+.login-button {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    transition: all 0.3s ease;
+}
+
+.login-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(99, 102, 241, 0.3);
+}
+
+.login-button:active {
+    transform: translateY(0);
+}
+
+.login-icon-container {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    transition: all 0.3s ease;
+}
+
+.login-icon-container:hover {
+    transform: scale(1.05) rotate(5deg);
+    box-shadow: 0 10px 30px rgba(99, 102, 241, 0.4);
+}
+
+/* Animación de entrada para el formulario */
+@keyframes slideInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.login-form-animate {
+    animation: slideInUp 0.6s ease-out;
+}
+
+/* Mejoras para mensajes de error */
+.login-error {
+    background: linear-gradient(135deg, #f87171 0%, #ef4444 100%);
+    color: white;
+    padding: 12px 16px;
+    border-radius: 8px;
+    font-size: 14px;
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2);
+    animation: shake 0.5s ease-in-out;
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    75% { transform: translateX(5px); }
+}
+
+/* Responsive improvements */
+@media (max-width: 640px) {
+    .login-form-container {
+        margin: 1rem;
+        padding: 1.5rem;
+    }
+    
+    .login-icon-container {
+        width: 3rem;
+        height: 3rem;
+    }
+    
+    .login-icon-container svg {
+        width: 1.5rem;
+        height: 1.5rem;
+    }
+}

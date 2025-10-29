@@ -1,44 +1,66 @@
 {{template "layout.html" .}}
 
 {{define "content"}}
-<div class="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+<div class="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-gray-50 to-gray-100">
     <div class="max-w-md w-full space-y-8">
-        <div>
-            <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900">
-                Iniciar Sesión en Traccar
+        <div class="text-center">
+            <!-- Logo/Icon mejorado -->
+            <div class="mx-auto h-16 w-16 bg-indigo-600 rounded-full flex items-center justify-center shadow-lg mb-6 transform transition-transform duration-300 hover:scale-105">
+                <svg class="h-8 w-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                </svg>
+            </div>
+            <h2 class="text-center text-3xl font-bold text-gray-900 mb-2">
+                Bienvenido
             </h2>
-            <p class="mt-2 text-center text-sm text-gray-600">
-                Usa tus credenciales de Traccar
+            <p class="text-center text-sm text-gray-600">
+                Inicia sesión para acceder al sistema
             </p>
         </div>
         
-        <!-- FORMULARIO SIEMPRE VISIBLE - KISS -->
-        <div class="mt-8 space-y-6">
-            <form id="loginForm" class="mt-8 space-y-6">
-                <div class="rounded-md shadow-sm -space-y-px">
-                    <div>
-                        <label for="email" class="sr-only">Email</label>
-                        <input
-                            id="email"
-                            name="email"
-                            type="email"
-                            value="tlc@tlc.com"
-                            required
-                            class="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                            placeholder="Email address"
-                        >
-                    </div>
-                    <div>
-                        <label for="password" class="sr-only">Password</label>
-                        <input
-                            id="password"
-                            name="password"
-                            type="password"
-                            value="gps159"
-                            required
-                            class="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                            placeholder="Password"
-                        >
+        <!-- FORMULARIO MEJORADO -->
+        <div class="mt-8">
+            <form id="loginForm" class="space-y-6">
+                <div class="bg-white rounded-xl shadow-lg p-8 space-y-6">
+                    <div class="space-y-4">
+                        <div>
+                            <label for="email" class="block text-sm font-medium text-gray-700 mb-1">Correo electrónico</label>
+                            <div class="relative">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207"></path>
+                                    </svg>
+                                </div>
+                                <input
+                                    id="email"
+                                    name="email"
+                                    type="email"
+                                    autocomplete="email"
+                                    required
+                                    class="appearance-none relative block w-full pl-10 pr-3 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm transition-all duration-200"
+                                    placeholder="tu@email.com"
+                                >
+                            </div>
+                        </div>
+                        <div>
+                            <label for="password" class="block text-sm font-medium text-gray-700 mb-1">Contraseña</label>
+                            <div class="relative">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                                    </svg>
+                                </div>
+                                <input
+                                    id="password"
+                                    name="password"
+                                    type="password"
+                                    autocomplete="current-password"
+                                    required
+                                    class="appearance-none relative block w-full pl-10 pr-3 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm transition-all duration-200"
+                                    placeholder="••••••••"
+                                >
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -48,7 +70,7 @@
                     <button
                         type="submit"
                         id="loginButton"
-                        class="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                        class="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-semibold rounded-lg text-white bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transform transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] shadow-lg"
                     >
                         <span id="buttonText" class="flex items-center">
                             <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -61,35 +83,18 @@
                                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                             </svg>
-                            Procesando...
+                            Iniciando sesión...
                         </span>
                     </button>
                 </div>
             </form>
-            
-            <!-- Información de demo -->
-            <div class="mt-6 bg-blue-50 border border-blue-200 rounded-md p-4">
-                <div class="flex">
-                    <div class="flex-shrink-0">
-                        <svg class="h-5 w-5 text-blue-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
-                        </svg>
-                    </div>
-                    <div class="ml-3">
-                        <h3 class="text-sm font-medium text-blue-800">
-                            ¿Credenciales de demo?
-                        </h3>
-                        <div class="mt-2 text-sm text-blue-700">
-                            <p>Usa tus credenciales de Traccar:</p>
-                            <ul class="list-disc list-inside mt-1">
-                                <li>Servidor: http://161.132.54.31:8082</li>
-                                <li>Email: tlc@tlc.com</li>
-                                <li>Password: gps159</li>
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-            </div>
+        </div>
+        
+        <!-- Footer -->
+        <div class="text-center">
+            <p class="text-xs text-gray-500">
+                Sistema de seguimiento GPS Traccar
+            </p>
         </div>
     </div>
 </div>
@@ -139,6 +144,11 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // JavaScript SIMPLE - KISS (SOLO EN LOGIN)
+// Función para sanitizar inputs
+function sanitizeInput(input) {
+    return input.trim().replace(/[<>]/g, '');
+}
+
 const loginForm = document.getElementById('loginForm');
 if (loginForm) {
     loginForm.addEventListener('submit', async function(e) {
@@ -146,8 +156,8 @@ if (loginForm) {
     
     console.log('🚀 [LOGIN] Iniciando proceso de login');
     
-    const email = document.getElementById('email').value;
-    const password = document.getElementById('password').value;
+    const email = sanitizeInput(document.getElementById('email').value);
+    const password = sanitizeInput(document.getElementById('password').value);
     const button = document.getElementById('loginButton');
     const buttonText = document.getElementById('buttonText');
     const loadingText = document.getElementById('loadingText');
