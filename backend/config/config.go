@@ -37,7 +37,7 @@ func LoadConfig() (*Config, error) {
 	}
 
 	config := &Config{
-		TraccarURL:  getEnv("TRACCAR_URL", "https://demo.traccar.org/api"),
+		TraccarURL:  getEnv("TRACCAR_URL", "http://161.132.50.106:8082/api"),
 		ServerPort:  getEnv("PORT", getEnv("SERVER_PORT", "8080")), // Soporta ambas variables
 		JWTSecret:   getEnv("JWT_SECRET", "your-secret-key-change-this-in-production"),
 		Environment: getEnv("ENV", "development"),
