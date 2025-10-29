@@ -23,7 +23,36 @@ func AuthMiddleware(cfg *config.Config) gin.HandlerFunc {
 		log.Printf("🔒 [MIDDLEWARE] User-Agent: %s", c.GetHeader("User-Agent"))
 		log.Printf("🔒 [MIDDLEWARE] Referer: %s", c.GetHeader("Referer"))
 
-		// Obtener cookies del cliente
+		// PRIMERO: Verificar si hay una sesión global activa
+		globalSession := services.GetGlobalSession()
+		if globalSession != nil {
+			log.Printf("🌐 [MIDDLEWARE] Sesión global encontrada, verificando...")
+
+			// Verificar sesión con el servicio global
+			user, err := globalSession.GetSession()
+			if err == nil && user != nil && user.ID != 0 {
+				log.Printf("✅ [MIDDLEWARE] Sesión global válida para usuario: %s (ID: %d)", user.Name, user.ID)
+
+				// Guardar información del usuario y el servicio en el contexto
+				c.Set("userId", user.ID)
+				c.Set("userEmail", user.Email)
+				c.Set("userName", user.Name)
+				c.Set("userAdmin", user.Administrator)
+				c.Set("user", user)
+				c.Set("traccarService", globalSession)
+
+				log.Printf("✅ [MIDDLEWARE] ===== AUTENTICACIÓN GLOBAL EXITOSA - CONTINUANDO =====")
+				c.Next()
+				return
+			} else {
+				log.Printf("❌ [MIDDLEWARE] Sesión global inválida: %v", err)
+				// Limpiar sesión global inválida
+				services.SetGlobalSession(nil)
+			}
+		}
+
+		// SEGUNDO: Si no hay sesión global, intentar con cookies del cliente
+		log.Printf("🍪 [MIDDLEWARE] No hay sesión global, verificando cookies del cliente...")
 		cookies := c.Request.Cookies()
 		log.Printf("🍪 [MIDDLEWARE] Cookies recibidas: %d", len(cookies))
 
@@ -34,7 +63,7 @@ func AuthMiddleware(cfg *config.Config) gin.HandlerFunc {
 
 		// Verificar que hay cookies de sesión
 		if len(cookies) == 0 {
-			log.Printf("❌ [MIDDLEWARE] ===== NO HAY COOKIES =====")
+			log.Printf("❌ [MIDDLEWARE] ===== NO HAY COOKIES NI SESIÓN GLOBAL =====")
 			// Si es una petición API, devolver JSON error
 			if isAPIRequest(c) {
 				c.JSON(http.StatusUnauthorized, gin.H{"error": "No autenticado"})
@@ -96,6 +125,9 @@ func AuthMiddleware(cfg *config.Config) gin.HandlerFunc {
 		log.Printf("✅ [MIDDLEWARE] ===== USUARIO VÁLIDO ENCONTRADO =====")
 		log.Printf("✅ [MIDDLEWARE] Usuario autenticado: ID=%d, Name=%s, Email=%s, Admin=%v",
 			user.ID, user.Name, user.Email, user.Administrator)
+
+		// Establecer esta sesión como global para futuras peticiones
+		services.SetGlobalSession(traccarService)
 
 		log.Printf("💾 [MIDDLEWARE] Guardando datos en contexto...")
 		// Guardar información del usuario y el servicio en el contexto

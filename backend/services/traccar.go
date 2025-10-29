@@ -18,6 +18,9 @@ type TraccarService struct {
 	Client  *http.Client
 }
 
+// Variable global para almacenar la sesión activa
+var globalSession *TraccarService
+
 func NewTraccarService(baseURL string) *TraccarService {
 	// Crear cookie jar para manejar sesiones automáticamente
 	jar, err := cookiejar.New(nil)
@@ -37,6 +40,17 @@ func NewTraccarService(baseURL string) *TraccarService {
 			},
 		},
 	}
+}
+
+// GetGlobalSession retorna la sesión global activa
+func GetGlobalSession() *TraccarService {
+	return globalSession
+}
+
+// SetGlobalSession establece la sesión global activa
+func SetGlobalSession(session *TraccarService) {
+	globalSession = session
+	log.Printf("🌐 [TRACCAR] Sesión global establecida")
 }
 
 func (s *TraccarService) Login(email, password string) (*models.LoginResponse, error) {
@@ -93,29 +107,44 @@ func (s *TraccarService) Login(email, password string) (*models.LoginResponse, e
 
 	log.Printf("✅ [TRACCAR] Usuario autenticado: %s (ID: %d)", user.Name, user.ID)
 
-	// Extraer cookies de la respuesta - MÉTODO MEJORADO
-	cookies := resp.Cookies()
-
-	// Si no hay cookies con el método automático, intentar extraer manualmente
-	if len(cookies) == 0 {
-		log.Printf("🔍 [TRACCAR] No se encontraron cookies automáticamente, extrayendo manualmente...")
-		cookies = extractCookiesManual(resp)
+	// IMPORTANTE: Verificar si hay cookies en el cookie jar (sesión mantenida)
+	cookies := []*http.Cookie{}
+	if s.Client.Jar != nil {
+		if parsedURL, err := url.Parse(s.BaseURL); err == nil {
+			cookies = s.Client.Jar.Cookies(parsedURL)
+			log.Printf("🍪 [TRACCAR] Cookies encontradas en el jar: %d", len(cookies))
+		}
 	}
 
-	log.Printf("🍪 [TRACCAR] Cookies recibidas: %d", len(cookies))
+	// Si no hay cookies en el jar, intentar extraer de la respuesta
+	if len(cookies) == 0 {
+		cookies = resp.Cookies()
+		log.Printf("🍪 [TRACCAR] Cookies en respuesta: %d", len(cookies))
+
+		// Si aún no hay cookies, intentar extraer manualmente
+		if len(cookies) == 0 {
+			log.Printf("🔍 [TRACCAR] No se encontraron cookies automáticamente, extrayendo manualmente...")
+			cookies = extractCookiesManual(resp)
+		}
+	}
 
 	for i, cookie := range cookies {
 		log.Printf("🍪 [TRACCAR] Cookie %d: %s=%s (Domain: %s, Path: %s, HttpOnly: %v, Secure: %v)",
 			i+1, cookie.Name, cookie.Value, cookie.Domain, cookie.Path, cookie.HttpOnly, cookie.Secure)
 	}
 
+	// ESTABLECER SESIÓN GLOBAL - ESTA ES LA CLAVE
+	SetGlobalSession(s)
+	log.Printf("🌐 [TRACCAR] Sesión global establecida para usuario: %s", user.Name)
+
 	// Crear respuesta
 	response := &models.LoginResponse{
 		User:    &user,
 		Cookies: cookies,
+		Token:   "SESSION_ACTIVE", // Token indicador de sesión activa
 	}
 
-	log.Printf("✅ [TRACCAR] Login completado exitosamente")
+	log.Printf("✅ [TRACCAR] Login completado exitosamente con sesión global")
 	return response, nil
 }
 

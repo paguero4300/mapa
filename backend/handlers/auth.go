@@ -45,34 +45,38 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		return
 	}
 
-	log.Printf("✅ [AUTH] Login exitoso, estableciendo %d cookies", len(loginResponse.Cookies))
+	log.Printf("✅ [AUTH] Login exitoso, sesión global establecida")
 
-	// Establecer cookies en la respuesta del cliente
-	log.Printf("🍪 [AUTH] ===== ESTABLECIENDO COOKIES EN EL CLIENTE =====")
-	for i, cookie := range loginResponse.Cookies {
-		log.Printf("🍪 [AUTH] Procesando cookie %d: %s=%s", i+1, cookie.Name, cookie.Value)
-		log.Printf("🍪 [AUTH] Cookie original - Domain: %s, Path: %s, HttpOnly: %v, Secure: %v",
-			cookie.Domain, cookie.Path, cookie.HttpOnly, cookie.Secure)
+	// IMPORTANTE: Ya no dependemos de cookies del cliente
+	// La sesión se mantiene en el servidor backend usando el cookie jar
+	log.Printf("�� [AUTH] ===== SESIÓN MANTENIDA EN SERVIDOR =====")
 
-		// Configuración de cookie CORREGIDA para desarrollo local
-		clientCookie := &http.Cookie{
-			Name:     cookie.Name,
-			Value:    cookie.Value,
-			Path:     "/",                  // Path raíz para toda la aplicación
-			Domain:   "localhost",          // Especificar localhost explícitamente
-			MaxAge:   86400,                // 24 horas
-			Secure:   false,                // false para HTTP en desarrollo
-			HttpOnly: true,                 // true para seguridad (JavaScript no necesita acceso directo)
-			SameSite: http.SameSiteLaxMode, // Lax para navegación normal
+	// Si hay cookies, establecerlas de todas formas (para compatibilidad)
+	if len(loginResponse.Cookies) > 0 {
+		log.Printf("🍪 [AUTH] Estableciendo %d cookies para compatibilidad", len(loginResponse.Cookies))
+		for i, cookie := range loginResponse.Cookies {
+			log.Printf("🍪 [AUTH] Cookie %d: %s=%s", i+1, cookie.Name, cookie.Value)
+
+			// Configuración de cookie para desarrollo local
+			clientCookie := &http.Cookie{
+				Name:     cookie.Name,
+				Value:    cookie.Value,
+				Path:     "/",
+				Domain:   "localhost",
+				MaxAge:   86400,
+				Secure:   false,
+				HttpOnly: true,
+				SameSite: http.SameSiteLaxMode,
+			}
+
+			http.SetCookie(c.Writer, clientCookie)
+			log.Printf("🍪 [AUTH] Cookie establecida: %s", clientCookie.Name)
 		}
-
-		http.SetCookie(c.Writer, clientCookie)
-
-		log.Printf("🍪 [AUTH] Cookie FORZADA establecida: %s=%s", clientCookie.Name, clientCookie.Value)
-		log.Printf("🍪 [AUTH] Configuración FORZADA - Path: %s, Domain: %s, MaxAge: %d, HttpOnly: %v, Secure: %v, SameSite: %v",
-			clientCookie.Path, clientCookie.Domain, clientCookie.MaxAge, clientCookie.HttpOnly, clientCookie.Secure, clientCookie.SameSite)
+	} else {
+		log.Printf("�� [AUTH] No hay cookies, usando sesión global del servidor")
 	}
-	log.Printf("🍪 [AUTH] ===== COOKIES ESTABLECIDAS COMPLETAMENTE =====")
+
+	log.Printf("�� [AUTH] ===== SESIÓN GLOBAL ACTIVA =====")
 
 	// Verificar que el usuario tiene los datos necesarios
 	if loginResponse.User == nil {
@@ -94,55 +98,61 @@ func (h *AuthHandler) Login(c *gin.Context) {
 func (h *AuthHandler) Logout(c *gin.Context) {
 	log.Printf("🚪 [AUTH] Iniciando proceso de logout")
 
-	// Crear un servicio Traccar con las cookies del cliente para el logout
-	traccarService := h.traccarService
+	// PRIMERO: Limpiar la sesión global
+	services.SetGlobalSession(nil)
+	log.Printf("🌐 [AUTH] Sesión global limpiada")
 
-	// Obtener cookies del cliente
-	clientCookies := c.Request.Cookies()
-	log.Printf("🍪 [AUTH] Cookies del cliente para logout: %d", len(clientCookies))
-
-	if len(clientCookies) > 0 {
-		// Crear servicio con las cookies del cliente
-		traccarService = h.traccarService.WithCookies(clientCookies)
-		log.Printf("🔄 [AUTH] Servicio Traccar creado con cookies del cliente")
-	}
-
-	// Cerrar sesión en Traccar
-	err := traccarService.Logout()
-	if err != nil {
-		log.Printf("⚠️ [AUTH] Error cerrando sesión en Traccar: %v", err)
-		// No fallar por esto, continuamos limpiando cookies locales
+	// SEGUNDO: Intentar cerrar sesión en Traccar si hay sesión activa
+	globalSession := services.GetGlobalSession()
+	if globalSession != nil {
+		err := globalSession.Logout()
+		if err != nil {
+			log.Printf("⚠️ [AUTH] Error cerrando sesión en Traccar: %v", err)
+		} else {
+			log.Printf("✅ [AUTH] Sesión cerrada exitosamente en Traccar")
+		}
 	} else {
-		log.Printf("✅ [AUTH] Sesión cerrada exitosamente en Traccar")
+		// Si no hay sesión global, intentar con cookies del cliente
+		clientCookies := c.Request.Cookies()
+		log.Printf("🍪 [AUTH] Cookies del cliente para logout: %d", len(clientCookies))
+
+		if len(clientCookies) > 0 {
+			traccarService := h.traccarService.WithCookies(clientCookies)
+			err := traccarService.Logout()
+			if err != nil {
+				log.Printf("⚠️ [AUTH] Error cerrando sesión con cookies: %v", err)
+			} else {
+				log.Printf("✅ [AUTH] Sesión cerrada exitosamente con cookies")
+			}
+		}
 	}
 
 	// Limpiar todas las cookies relacionadas con la sesión
 	cookiesToClear := []string{"JSESSIONID", "traccar-session", "session"}
 
 	for _, cookieName := range cookiesToClear {
-		// Limpiar cookie con configuración consistente
 		http.SetCookie(c.Writer, &http.Cookie{
 			Name:     cookieName,
 			Value:    "",
 			Path:     "/",
-			Domain:   "localhost", // Mismo dominio que en login
+			Domain:   "localhost",
 			MaxAge:   -1,
 			Expires:  time.Unix(0, 0),
 			HttpOnly: true,
 			Secure:   false,
 			SameSite: http.SameSiteLaxMode,
 		})
-
 		log.Printf("🧹 [AUTH] Cookie limpiada: %s", cookieName)
 	}
 
 	// También limpiar cualquier cookie que el cliente haya enviado
+	clientCookies := c.Request.Cookies()
 	for _, cookie := range clientCookies {
 		http.SetCookie(c.Writer, &http.Cookie{
 			Name:     cookie.Name,
 			Value:    "",
 			Path:     "/",
-			Domain:   "localhost", // Mismo dominio que en login
+			Domain:   "localhost",
 			MaxAge:   -1,
 			Expires:  time.Unix(0, 0),
 			HttpOnly: cookie.HttpOnly,

@@ -22,7 +22,7 @@
                             id="email"
                             name="email"
                             type="email"
-                            value="etssacocsa@smartindustrype.com"
+                            value="tlc@tlc.com"
                             required
                             class="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
                             placeholder="Email address"
@@ -34,7 +34,7 @@
                             id="password"
                             name="password"
                             type="password"
-                            value="etssacocsa"
+                            value="gps159"
                             required
                             class="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
                             placeholder="Password"
@@ -83,8 +83,8 @@
                             <p>Usa tus credenciales de Traccar:</p>
                             <ul class="list-disc list-inside mt-1">
                                 <li>Servidor: http://161.132.54.31:8082</li>
-                                <li>Email: etssacocsa@smartindustrype.com</li>
-                                <li>Password: etssacocsa</li>
+                                <li>Email: tlc@tlc.com</li>
+                                <li>Password: gps159</li>
                             </ul>
                         </div>
                     </div>
@@ -187,92 +187,18 @@ if (loginForm) {
         sessionStorage.setItem('userData', JSON.stringify(data.user));
         console.log('💾 [LOGIN] Datos guardados en sessionStorage');
         
-        // VERIFICAR COOKIES INMEDIATAMENTE
-        console.log('🍪 [LOGIN] ===== VERIFICANDO COOKIES POST-LOGIN =====');
-        console.log('🍪 [LOGIN] document.cookie INMEDIATO:', document.cookie);
-        console.log('🍪 [LOGIN] document.cookie.length:', document.cookie.length);
-        
-        // Verificar headers de respuesta
-        console.log('📋 [LOGIN] Response headers:');
-        for (let [key, value] of response.headers.entries()) {
-            console.log('📋 [LOGIN] Header:', key, '=', value);
-        }
-        
-        // Esperar un momento para que las cookies se establezcan
-        setTimeout(() => {
-            console.log('🍪 [LOGIN] document.cookie DESPUÉS DE 1s:', document.cookie);
-            
-            // Probar request con cookies
-            console.log('🔍 [LOGIN] Probando /api/debug...');
-            fetch('/api/debug', {
-                method: 'GET',
-                credentials: 'include'
-            })
-            .then(response => {
-                console.log('🔍 [LOGIN] Debug response status:', response.status);
-                return response.json();
-            })
-            .then(debugData => {
-                console.log('🔍 [LOGIN] Debug response data:', debugData);
-                if (debugData.cookies === 0) {
-                    console.error('❌ [LOGIN] ¡¡¡NO SE ESTÁN ENVIANDO COOKIES AL SERVIDOR!!!');
-                    console.error('❌ [LOGIN] Esto explica por qué el dashboard no funciona');
-                } else {
-                    console.log('✅ [LOGIN] Cookies enviadas correctamente al servidor');
-                }
-            })
-            .catch(error => {
-                console.error('❌ [LOGIN] Error en debug:', error);
-            });
-        }, 1000);
-        
-        // Verificar de nuevo después de 2 segundos
-        setTimeout(() => {
-            console.log('🍪 [LOGIN] document.cookie DESPUÉS DE 2s:', document.cookie);
-        }, 2000);
-        
         // Mostrar éxito
         if (window.appUtils && window.appUtils.showNotification) {
             window.appUtils.showNotification('¡Login exitoso!', 'success');
         }
         
-        console.log('🎉 [LOGIN] Login exitoso, redirigiendo en 5 segundos...');
+        console.log('🎉 [LOGIN] Login exitoso, redirigiendo al dashboard...');
         
-        // Probar acceso directo al dashboard antes de redirigir
-        setTimeout(() => {
-            console.log('🔍 [LOGIN] Probando acceso directo al dashboard...');
-            fetch('/dashboard', {
-                method: 'GET',
-                credentials: 'include'
-            })
-            .then(response => {
-                console.log('🔍 [LOGIN] Dashboard response status:', response.status);
-                console.log('🔍 [LOGIN] Dashboard response headers:', [...response.headers.entries()]);
-                if (response.status === 302) {
-                    console.error('❌ [LOGIN] Dashboard redirige - middleware está fallando');
-                } else if (response.status === 200) {
-                    console.log('✅ [LOGIN] Dashboard accesible - middleware funciona');
-                }
-                return response.text();
-            })
-            .then(html => {
-                console.log('📄 [LOGIN] Dashboard HTML length:', html.length);
-                if (html.includes('Iniciar Sesión en Traccar')) {
-                    console.error('❌ [LOGIN] ¡¡¡DASHBOARD MUESTRA LOGIN - MIDDLEWARE FALLA!!!');
-                } else if (html.includes('Bienvenido de nuevo')) {
-                    console.log('✅ [LOGIN] Dashboard muestra contenido correcto');
-                }
-            })
-            .catch(error => {
-                console.error('❌ [LOGIN] Error probando dashboard:', error);
-            });
-        }, 3000);
-        
-        // Redirigir después de verificar
+        // Redirigir directamente al dashboard
         setTimeout(() => {
             console.log('🔄 [LOGIN] Redirigiendo al dashboard...');
             window.location.href = '/dashboard';
-        }, 5000);
+        }, 1500);
         
     } catch (err) {
         console.error('❌ [LOGIN] Error en login:', err);
