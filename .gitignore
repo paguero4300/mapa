@@ -20,3 +20,9 @@ scripts/qodo-setup.sh
 .github/workflows/qodo.yml
 .qodo.yml
 .roo/mcp.json
+UBUNTU_24_04_INSTALLATION_GUIDE.md
+UBUNTU_INSTALLATION_REQUIREMENTS.md
+UBUNTU_DEPLOYMENT_STEPS.md
+HOW_TO_ACCESS_MAPA.md
+.gitignore
+UBUNTU_DEPLOYMENT_MAPA.md
