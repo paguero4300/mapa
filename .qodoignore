@@ -1,0 +1,95 @@
+# Qodo ignore file
+# Specify files and directories to exclude from Qodo analysis
+
+# Dependencies and vendor directories
+vendor/
+node_modules/
+go.sum
+
+# Build artifacts
+bin/
+dist/
+build/
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Temporary files
+*.tmp
+*.temp
+*.log
+*.cache
+
+# Environment and configuration files with sensitive data
+.env
+.env.local
+.env.production
+*.key
+*.pem
+*.p12
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Git directory
+.git/
+
+# Test coverage reports
+coverage.out
+coverage.html
+*.cover
+
+# Documentation build artifacts
+docs/_build/
+docs/site/
+
+# Docker artifacts
+.dockerignore
+
+# Backup files
+*.bak
+*.backup
+
+# Generated files
+*.pb.go
+*.gen.go
+
+# Third-party assets
+frontend/static/lib/
+frontend/static/vendor/
+
+# Minified files
+*.min.js
+*.min.css
+
+# Source maps
+*.map
+
+# Package files
+*.tar.gz
+*.zip
+*.rar
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Certificates and keys
+*.crt
+*.cert
+*.ca-bundle

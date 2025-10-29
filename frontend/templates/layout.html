@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{if .Title}}{{.Title}}{{else}}Traccar Login{{end}}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="/static/js/app.js"></script>
+    <!-- Alpine.js REMOVIDO - usando solo JavaScript vanilla -->
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <!-- Header para usuarios autenticados -->
+    <header id="authHeader" class="bg-white shadow-sm border-b border-gray-200 hidden">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <!-- Logo y título -->
+                    <div class="flex items-center space-x-3">
+                        <div class="bg-indigo-600 text-white p-2 rounded-lg">
+                            <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"></path>
+                            </svg>
+                        </div>
+                        <div>
+                            <h1 class="text-xl font-semibold text-gray-900">Traccar Dashboard</h1>
+                            <p class="text-xs text-gray-500">Sistema de seguimiento GPS</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="flex items-center space-x-4">
+                    <!-- Información del usuario -->
+                    <div class="flex items-center space-x-3">
+                        <!-- Avatar del usuario -->
+                        <div class="bg-indigo-100 text-indigo-600 h-8 w-8 rounded-full flex items-center justify-center">
+                            <span id="userInitial">U</span>
+                        </div>
+                        
+                        <!-- Detalles del usuario -->
+                        <div class="hidden sm:block">
+                            <p class="text-sm font-medium text-gray-900" id="headerUserName">{{if .UserName}}{{.UserName}}{{else}}Cargando...{{end}}</p>
+                            <p class="text-xs text-gray-500" id="headerUserEmail">{{if .UserEmail}}{{.UserEmail}}{{else}}Cargando...{{end}}</p>
+                        </div>
+                        
+                        <!-- Badge de administrador -->
+                        {{if .UserAdmin}}<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                            Admin
+                        </span>{{end}}
+                    </div>
+                    
+                    <!-- Menú desplegable -->
+                    <div class="relative">
+                        <button onclick="toggleDropdown()" class="flex items-center text-gray-500 hover:text-gray-700 focus:outline-none focus:text-gray-700">
+                            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                            </svg>
+                        </button>
+                        
+                        <div id="userDropdown" class="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50 hidden">
+                            <div class="py-1">
+                                <a href="/dashboard" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                    🏠 Dashboard
+                                </a>
+                                <a href="/devices" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                    📱 Dispositivos
+                                </a>
+                                <a href="/map" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                    🗺️ Mapa en Tiempo Real
+                                </a>
+                                <a href="/geofences" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                    🔷 Geocercas
+                                </a>
+                                <div class="border-t border-gray-100"></div>
+                                <button onclick="logout()" class="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50">
+                                    🚪 Cerrar Sesión
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Contenido principal -->
+    <main>
+        {{if eq .Title "Dashboard - Traccar"}}
+            {{block "dashboard-content" .}}{{end}}
+        {{else if eq .Title "Dispositivos - Traccar"}}
+            {{block "devices-content" .}}{{end}}
+        {{else if eq .Title "Mapa en Tiempo Real - Traccar"}}
+            {{block "map-content" .}}{{end}}
+        {{else if eq .Title "Gestión de Geocercas - Traccar"}}
+            {{block "geofences-content" .}}{{end}}
+        {{else}}
+            {{block "content" .}}{{end}}
+        {{end}}
+    </main>
+    
+    <script>
+    // JavaScript SIMPLE para el layout
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('🚀 [LAYOUT] Inicializando layout');
+        
+        // Verificar si estamos en una página que requiere autenticación
+        const currentPath = window.location.pathname;
+        const isAuthPage = currentPath === '/dashboard' || 
+                          currentPath.startsWith('/dashboard') ||
+                          currentPath === '/devices' ||
+                          currentPath === '/map' ||
+                          currentPath === '/geofences';
+        
+        if (isAuthPage) {
+            // Mostrar header y verificar autenticación
+            showAuthHeader();
+            
+            // Verificar si hay datos de usuario
+            const userData = sessionStorage.getItem('userData');
+            if (userData) {
+                try {
+                    const user = JSON.parse(userData);
+                    updateHeaderUser(user);
+                } catch (error) {
+                    console.error('❌ [LAYOUT] Error parseando datos de usuario:', error);
+                }
+            }
+        }
+    });
+    
+    function showAuthHeader() {
+        const header = document.getElementById('authHeader');
+        if (header) {
+            header.classList.remove('hidden');
+        }
+    }
+    
+    function updateHeaderUser(user) {
+        // Actualizar inicial del usuario
+        const userInitial = document.getElementById('userInitial');
+        if (userInitial && user.name) {
+            userInitial.textContent = user.name.charAt(0).toUpperCase();
+        }
+        
+        // Actualizar nombre en header
+        const headerUserName = document.getElementById('headerUserName');
+        if (headerUserName && user.name) {
+            headerUserName.textContent = user.name;
+        }
+        
+        // Actualizar email en header
+        const headerUserEmail = document.getElementById('headerUserEmail');
+        if (headerUserEmail && user.email) {
+            headerUserEmail.textContent = user.email;
+        }
+    }
+    
+    function toggleDropdown() {
+        const dropdown = document.getElementById('userDropdown');
+        if (dropdown) {
+            dropdown.classList.toggle('hidden');
+        }
+    }
+    
+    // Cerrar dropdown al hacer click fuera
+    document.addEventListener('click', function(event) {
+        const dropdown = document.getElementById('userDropdown');
+        const button = event.target.closest('button[onclick="toggleDropdown()"]');
+        
+        if (dropdown && !button && !dropdown.contains(event.target)) {
+            dropdown.classList.add('hidden');
+        }
+    });
+    
+    async function logout() {
+        console.log('🚪 [LAYOUT] Iniciando logout');
+        
+        try {
+            const response = await fetch('/api/logout', {
+                method: 'POST',
+                credentials: 'include'
+            });
+            
+            if (response.ok) {
+                console.log('✅ [LAYOUT] Logout exitoso');
+                if (window.appUtils && window.appUtils.showNotification) {
+                    window.appUtils.showNotification('Sesión cerrada correctamente', 'success');
+                }
+            } else {
+                console.log('⚠️ [LAYOUT] Logout con errores');
+            }
+        } catch (error) {
+            console.error('❌ [LAYOUT] Error en logout:', error);
+        } finally {
+            // Limpiar datos locales
+            sessionStorage.removeItem('userData');
+            
+            // Redirigir al login
+            setTimeout(() => {
+                window.location.href = '/';
+            }, 1000);
+        }
+    }
+    </script>
+    
+</body>
+</html>

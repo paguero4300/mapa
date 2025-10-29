@@ -1,0 +1,297 @@
+{{template "layout.html" .}}
+
+{{define "content"}}
+<div class="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-md w-full space-y-8">
+        <div>
+            <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900">
+                Iniciar Sesión en Traccar
+            </h2>
+            <p class="mt-2 text-center text-sm text-gray-600">
+                Usa tus credenciales de Traccar
+            </p>
+        </div>
+        
+        <!-- FORMULARIO SIEMPRE VISIBLE - KISS -->
+        <div class="mt-8 space-y-6">
+            <form id="loginForm" class="mt-8 space-y-6">
+                <div class="rounded-md shadow-sm -space-y-px">
+                    <div>
+                        <label for="email" class="sr-only">Email</label>
+                        <input
+                            id="email"
+                            name="email"
+                            type="email"
+                            value="etssacocsa@smartindustrype.com"
+                            required
+                            class="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+                            placeholder="Email address"
+                        >
+                    </div>
+                    <div>
+                        <label for="password" class="sr-only">Password</label>
+                        <input
+                            id="password"
+                            name="password"
+                            type="password"
+                            value="etssacocsa"
+                            required
+                            class="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+                            placeholder="Password"
+                        >
+                    </div>
+                </div>
+
+                <div id="errorMessage" class="text-red-500 text-sm text-center hidden"></div>
+                
+                <div>
+                    <button
+                        type="submit"
+                        id="loginButton"
+                        class="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                    >
+                        <span id="buttonText" class="flex items-center">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"></path>
+                            </svg>
+                            Iniciar Sesión
+                        </span>
+                        <span id="loadingText" class="flex items-center hidden">
+                            <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            Procesando...
+                        </span>
+                    </button>
+                </div>
+            </form>
+            
+            <!-- Información de demo -->
+            <div class="mt-6 bg-blue-50 border border-blue-200 rounded-md p-4">
+                <div class="flex">
+                    <div class="flex-shrink-0">
+                        <svg class="h-5 w-5 text-blue-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+                        </svg>
+                    </div>
+                    <div class="ml-3">
+                        <h3 class="text-sm font-medium text-blue-800">
+                            ¿Credenciales de demo?
+                        </h3>
+                        <div class="mt-2 text-sm text-blue-700">
+                            <p>Usa tus credenciales de Traccar:</p>
+                            <ul class="list-disc list-inside mt-1">
+                                <li>Servidor: http://161.132.54.31:8082</li>
+                                <li>Email: etssacocsa@smartindustrype.com</li>
+                                <li>Password: etssacocsa</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Verificar si ya está autenticado al cargar la página (SOLO EN LOGIN)
+document.addEventListener('DOMContentLoaded', function() {
+    // IMPORTANTE: Solo ejecutar en la página de login
+    if (window.location.pathname !== '/' && window.location.pathname !== '/login') {
+        console.log('🚫 [LOGIN PAGE] No estamos en página de login, omitiendo verificación');
+        return;
+    }
+    
+    console.log('🚀 [LOGIN PAGE] Verificando estado de autenticación');
+    
+    // Verificar sessionStorage
+    const userData = sessionStorage.getItem('userData');
+    if (userData) {
+        console.log('💾 [LOGIN PAGE] Datos de usuario encontrados en sessionStorage');
+        try {
+            const user = JSON.parse(userData);
+            console.log('👤 [LOGIN PAGE] Usuario:', user.name);
+            
+            // Verificar sesión con el servidor
+            fetch('/api/session', {
+                method: 'GET',
+                credentials: 'include'
+            })
+            .then(response => {
+                if (response.ok) {
+                    console.log('✅ [LOGIN PAGE] Sesión válida, redirigiendo al dashboard');
+                    window.location.href = '/dashboard';
+                } else {
+                    console.log('❌ [LOGIN PAGE] Sesión expirada, limpiando datos');
+                    sessionStorage.removeItem('userData');
+                }
+            })
+            .catch(error => {
+                console.error('❌ [LOGIN PAGE] Error verificando sesión:', error);
+                sessionStorage.removeItem('userData');
+            });
+        } catch (error) {
+            console.error('❌ [LOGIN PAGE] Error parseando datos:', error);
+            sessionStorage.removeItem('userData');
+        }
+    }
+});
+
+// JavaScript SIMPLE - KISS (SOLO EN LOGIN)
+const loginForm = document.getElementById('loginForm');
+if (loginForm) {
+    loginForm.addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    console.log('🚀 [LOGIN] Iniciando proceso de login');
+    
+    const email = document.getElementById('email').value;
+    const password = document.getElementById('password').value;
+    const button = document.getElementById('loginButton');
+    const buttonText = document.getElementById('buttonText');
+    const loadingText = document.getElementById('loadingText');
+    const errorMessage = document.getElementById('errorMessage');
+    
+    console.log('📧 [LOGIN] Email:', email);
+    
+    // Mostrar loading
+    button.disabled = true;
+    buttonText.classList.add('hidden');
+    loadingText.classList.remove('hidden');
+    errorMessage.classList.add('hidden');
+    errorMessage.textContent = '';
+    
+    try {
+        console.log('📡 [LOGIN] Enviando request a /api/login');
+        
+        const response = await fetch('/api/login', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            credentials: 'include',
+            body: JSON.stringify({ email, password })
+        });
+        
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.error || `HTTP ${response.status}`);
+        }
+        
+        const data = await response.json();
+        console.log('✅ [LOGIN] Login response recibida:', data);
+        console.log('👤 [LOGIN] Usuario recibido:', data.user?.name, data.user?.email);
+        
+        // Guardar en sessionStorage
+        sessionStorage.setItem('userData', JSON.stringify(data.user));
+        console.log('💾 [LOGIN] Datos guardados en sessionStorage');
+        
+        // VERIFICAR COOKIES INMEDIATAMENTE
+        console.log('🍪 [LOGIN] ===== VERIFICANDO COOKIES POST-LOGIN =====');
+        console.log('🍪 [LOGIN] document.cookie INMEDIATO:', document.cookie);
+        console.log('🍪 [LOGIN] document.cookie.length:', document.cookie.length);
+        
+        // Verificar headers de respuesta
+        console.log('📋 [LOGIN] Response headers:');
+        for (let [key, value] of response.headers.entries()) {
+            console.log('📋 [LOGIN] Header:', key, '=', value);
+        }
+        
+        // Esperar un momento para que las cookies se establezcan
+        setTimeout(() => {
+            console.log('🍪 [LOGIN] document.cookie DESPUÉS DE 1s:', document.cookie);
+            
+            // Probar request con cookies
+            console.log('🔍 [LOGIN] Probando /api/debug...');
+            fetch('/api/debug', {
+                method: 'GET',
+                credentials: 'include'
+            })
+            .then(response => {
+                console.log('🔍 [LOGIN] Debug response status:', response.status);
+                return response.json();
+            })
+            .then(debugData => {
+                console.log('🔍 [LOGIN] Debug response data:', debugData);
+                if (debugData.cookies === 0) {
+                    console.error('❌ [LOGIN] ¡¡¡NO SE ESTÁN ENVIANDO COOKIES AL SERVIDOR!!!');
+                    console.error('❌ [LOGIN] Esto explica por qué el dashboard no funciona');
+                } else {
+                    console.log('✅ [LOGIN] Cookies enviadas correctamente al servidor');
+                }
+            })
+            .catch(error => {
+                console.error('❌ [LOGIN] Error en debug:', error);
+            });
+        }, 1000);
+        
+        // Verificar de nuevo después de 2 segundos
+        setTimeout(() => {
+            console.log('🍪 [LOGIN] document.cookie DESPUÉS DE 2s:', document.cookie);
+        }, 2000);
+        
+        // Mostrar éxito
+        if (window.appUtils && window.appUtils.showNotification) {
+            window.appUtils.showNotification('¡Login exitoso!', 'success');
+        }
+        
+        console.log('🎉 [LOGIN] Login exitoso, redirigiendo en 5 segundos...');
+        
+        // Probar acceso directo al dashboard antes de redirigir
+        setTimeout(() => {
+            console.log('🔍 [LOGIN] Probando acceso directo al dashboard...');
+            fetch('/dashboard', {
+                method: 'GET',
+                credentials: 'include'
+            })
+            .then(response => {
+                console.log('🔍 [LOGIN] Dashboard response status:', response.status);
+                console.log('🔍 [LOGIN] Dashboard response headers:', [...response.headers.entries()]);
+                if (response.status === 302) {
+                    console.error('❌ [LOGIN] Dashboard redirige - middleware está fallando');
+                } else if (response.status === 200) {
+                    console.log('✅ [LOGIN] Dashboard accesible - middleware funciona');
+                }
+                return response.text();
+            })
+            .then(html => {
+                console.log('📄 [LOGIN] Dashboard HTML length:', html.length);
+                if (html.includes('Iniciar Sesión en Traccar')) {
+                    console.error('❌ [LOGIN] ¡¡¡DASHBOARD MUESTRA LOGIN - MIDDLEWARE FALLA!!!');
+                } else if (html.includes('Bienvenido de nuevo')) {
+                    console.log('✅ [LOGIN] Dashboard muestra contenido correcto');
+                }
+            })
+            .catch(error => {
+                console.error('❌ [LOGIN] Error probando dashboard:', error);
+            });
+        }, 3000);
+        
+        // Redirigir después de verificar
+        setTimeout(() => {
+            console.log('🔄 [LOGIN] Redirigiendo al dashboard...');
+            window.location.href = '/dashboard';
+        }, 5000);
+        
+    } catch (err) {
+        console.error('❌ [LOGIN] Error en login:', err);
+        errorMessage.textContent = err.message || 'Error en el login';
+        errorMessage.classList.remove('hidden');
+        
+        if (window.appUtils && window.appUtils.showNotification) {
+            window.appUtils.showNotification(errorMessage.textContent, 'error');
+        }
+    } finally {
+        // Restaurar botón
+        button.disabled = false;
+        buttonText.classList.remove('hidden');
+        loadingText.classList.add('hidden');
+        console.log('🏁 [LOGIN] Proceso de login finalizado');
+    }
+    });
+} else {
+    console.log('🚫 [LOGIN] Formulario de login no encontrado, omitiendo event listener');
+}
+</script>
+{{end}}

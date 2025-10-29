@@ -1,0 +1,767 @@
+{{template "layout.html" .}}
+
+{{define "geofences-content"}}
+<div id="geofencesContainer" class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+    <!-- Breadcrumb -->
+    <nav class="flex mb-6" aria-label="Breadcrumb">
+        <ol class="inline-flex items-center space-x-1 md:space-x-3">
+            <li class="inline-flex items-center">
+                <a href="/dashboard" class="inline-flex items-center text-sm font-medium text-gray-700 hover:text-indigo-600">
+                    <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"></path>
+                    </svg>
+                    Dashboard
+                </a>
+            </li>
+            <li>
+                <div class="flex items-center">
+                    <svg class="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
+                    </svg>
+                    <span class="ml-1 text-sm font-medium text-gray-500 md:ml-2">Gestión de Geocercas</span>
+                </div>
+            </li>
+        </ol>
+    </nav>
+    <!-- Loading state -->
+    <div id="loadingState" class="flex justify-center items-center h-64 hidden">
+        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500"></div>
+    </div>
+    
+    <!-- Error state -->
+    <div id="errorState" class="bg-red-50 border border-red-200 rounded-md p-4 mb-6 hidden">
+        <div class="flex">
+            <div class="flex-shrink-0">
+                <svg class="h-5 w-5 text-red-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+                </svg>
+            </div>
+            <div class="ml-3">
+                <h3 class="text-sm font-medium text-red-800">Error</h3>
+                <div class="mt-2 text-sm text-red-700">
+                    <p id="errorMessage"></p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Success state -->
+    <div id="successState" class="bg-green-50 border border-green-200 rounded-md p-4 mb-6 hidden">
+        <div class="flex">
+            <div class="flex-shrink-0">
+                <svg class="h-5 w-5 text-green-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                </svg>
+            </div>
+            <div class="ml-3">
+                <h3 class="text-sm font-medium text-green-800">Éxito</h3>
+                <div class="mt-2 text-sm text-green-700">
+                    <p id="successMessage"></p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Geofences Content -->
+    <div id="geofencesContent" class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+        <!-- Header -->
+        <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+            <div class="flex justify-between items-center">
+                <div class="flex items-center space-x-4">
+                    <a href="/dashboard" class="text-gray-400 hover:text-gray-600 transition-colors">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                        </svg>
+                    </a>
+                    <div>
+                        <h1 class="text-3xl font-bold text-gray-900">🔷 Gestión de Geocercas</h1>
+                        <p class="text-gray-600 mt-2">Administra tus zonas geográficas y áreas de interés</p>
+                    </div>
+                </div>
+                <div class="bg-purple-100 p-4 rounded-lg">
+                    <div class="text-center">
+                        <div class="text-2xl font-bold text-purple-900" id="totalGeofences">0</div>
+                        <div class="text-sm text-purple-700">Total Geocercas</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Controls -->
+        <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+            <div class="flex justify-between items-center">
+                <div class="flex items-center space-x-4">
+                    <h2 class="text-xl font-semibold text-gray-900">Lista de Geocercas</h2>
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800" id="geofenceCount">
+                        0 geocercas
+                    </span>
+                </div>
+                <div class="flex items-center space-x-3">
+                    <!-- Botones de acción masiva -->
+                    <div class="flex items-center space-x-2 border-r border-gray-300 pr-3">
+                        <button onclick="toggleAllGeofences(true)" class="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg flex items-center space-x-2 text-sm">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            <span>Mostrar Todas</span>
+                        </button>
+                        <button onclick="toggleAllGeofences(false)" class="bg-gray-600 hover:bg-gray-700 text-white px-3 py-2 rounded-lg flex items-center space-x-2 text-sm">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            <span>Ocultar Todas</span>
+                        </button>
+                    </div>
+                    
+                    <button onclick="refreshGeofences()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                        </svg>
+                        <span>Actualizar</span>
+                    </button>
+                    <a href="/map" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"></path>
+                        </svg>
+                        <span>Ver en Mapa</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Geofences Table -->
+        <div class="bg-white rounded-lg shadow-md overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Geocerca
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Tipo
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Descripción
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Visible en Mapa
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Acciones
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody id="geofencesTableBody" class="bg-white divide-y divide-gray-200">
+                        <!-- Contenido dinámico -->
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Empty state -->
+            <div id="emptyState" class="text-center py-12 hidden">
+                <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                </svg>
+                <h3 class="mt-2 text-sm font-medium text-gray-900">No hay geocercas</h3>
+                <p class="mt-1 text-sm text-gray-500">No se encontraron geocercas configuradas.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Edición -->
+<div id="editModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
+    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+        <div class="mt-3">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-medium text-gray-900" id="modalTitle">Editar Geocerca</h3>
+                <button onclick="closeEditModal()" class="text-gray-400 hover:text-gray-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            
+            <form id="editForm" class="space-y-4">
+                <div>
+                    <label for="editName" class="block text-sm font-medium text-gray-700">Nombre</label>
+                    <input type="text" id="editName" name="name" required 
+                           class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-purple-500 focus:border-purple-500">
+                </div>
+                
+                <div>
+                    <label for="editDescription" class="block text-sm font-medium text-gray-700">Descripción</label>
+                    <textarea id="editDescription" name="description" rows="3"
+                              class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-purple-500 focus:border-purple-500"></textarea>
+                </div>
+                
+                <div class="flex items-center">
+                    <input type="checkbox" id="editVisible" name="visible" 
+                           class="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded">
+                    <label for="editVisible" class="ml-2 block text-sm text-gray-900">
+                        Mostrar en mapa
+                    </label>
+                </div>
+                
+                <div class="flex justify-end space-x-3 pt-4">
+                    <button type="button" onclick="closeEditModal()" 
+                            class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded">
+                        Cancelar
+                    </button>
+                    <button type="submit" 
+                            class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded">
+                        Guardar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// Variables globales
+let geofences = [];
+let currentEditingId = null;
+// Eliminamos localStorage - ahora usamos API
+
+// Inicialización
+document.addEventListener('DOMContentLoaded', function() {
+    if (!window.location.pathname.startsWith('/geofences')) {
+        console.log('🚫 [GEOFENCES] No estamos en página de geocercas');
+        return;
+    }
+    
+    console.log('🔷 [GEOFENCES] Inicializando gestión de geocercas');
+    loadGeofences();
+});
+
+// Cargar geocercas
+async function loadGeofences() {
+    showLoading(true);
+    hideMessages();
+    
+    try {
+        console.log('🔷 [GEOFENCES] Cargando geocercas...');
+        
+        const response = await fetch('/api/geofences', {
+            method: 'GET',
+            credentials: 'include'
+        });
+        
+        if (!response.ok) {
+            throw new Error(`Error ${response.status}: ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        console.log('✅ [GEOFENCES] Geocercas cargadas:', data);
+        
+        geofences = data.geofences || [];
+        renderGeofencesTable();
+        updateCounters();
+        
+    } catch (error) {
+        console.error('❌ [GEOFENCES] Error cargando geocercas:', error);
+        showError('Error cargando geocercas: ' + error.message);
+    } finally {
+        showLoading(false);
+    }
+}
+
+// Renderizar tabla de geocercas
+function renderGeofencesTable() {
+    const tbody = document.getElementById('geofencesTableBody');
+    const emptyState = document.getElementById('emptyState');
+    
+    if (geofences.length === 0) {
+        tbody.innerHTML = '';
+        emptyState.classList.remove('hidden');
+        return;
+    }
+    
+    emptyState.classList.add('hidden');
+    
+    tbody.innerHTML = geofences.map(geofence => {
+        const type = getGeofenceTypeText(geofence.area);
+        const isVisible = getGeofenceVisibility(geofence); // Usar helper
+        
+        return `
+            <tr class="hover:bg-gray-50">
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0 h-10 w-10">
+                            <div class="h-10 w-10 rounded-full ${getTypeColor(type)} flex items-center justify-center">
+                                <span class="text-white font-medium">${getTypeIcon(type)}</span>
+                            </div>
+                        </div>
+                        <div class="ml-4">
+                            <div class="text-sm font-medium text-gray-900">${geofence.name}</div>
+                            <div class="text-sm text-gray-500">ID: ${geofence.id}</div>
+                        </div>
+                    </div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getTypeBadgeColor(type)}">
+                        ${type}
+                    </span>
+                </td>
+                <td class="px-6 py-4">
+                    <div class="text-sm text-gray-900">${geofence.description || 'Sin descripción'}</div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <label class="flex items-center">
+                        <input type="checkbox" ${isVisible ? 'checked' : ''} 
+                               onchange="toggleVisibility(${geofence.id})"
+                               class="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded">
+                        <span class="ml-2 text-sm text-gray-700">${isVisible ? 'Visible' : 'Oculto'}</span>
+                    </label>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <div class="flex space-x-2">
+                        <button onclick="editGeofence(${geofence.id})" 
+                                class="text-indigo-600 hover:text-indigo-900">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                            </svg>
+                        </button>
+                        <button onclick="deleteGeofence(${geofence.id}, '${geofence.name}')" 
+                                class="text-red-600 hover:text-red-900">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        `;
+    }).join('');
+}
+
+// Obtener tipo de geocerca desde el área WKT
+function getGeofenceTypeText(area) {
+    if (!area) return 'Desconocido';
+    const areaUpper = area.toUpperCase();
+    if (areaUpper.startsWith('POLYGON')) return 'Polígono';
+    if (areaUpper.startsWith('CIRCLE')) return 'Círculo';
+    if (areaUpper.startsWith('LINESTRING')) return 'Línea';
+    return 'Desconocido';
+}
+
+// Obtener color por tipo
+function getTypeColor(type) {
+    switch (type) {
+        case 'Polígono': return 'bg-blue-500';
+        case 'Círculo': return 'bg-orange-500';
+        case 'Línea': return 'bg-purple-500';
+        default: return 'bg-gray-500';
+    }
+}
+
+// Obtener icono por tipo
+function getTypeIcon(type) {
+    switch (type) {
+        case 'Polígono': return '⬟';
+        case 'Círculo': return '●';
+        case 'Línea': return '━';
+        default: return '?';
+    }
+}
+
+// Obtener color de badge por tipo
+function getTypeBadgeColor(type) {
+    switch (type) {
+        case 'Polígono': return 'bg-blue-100 text-blue-800';
+        case 'Círculo': return 'bg-orange-100 text-orange-800';
+        case 'Línea': return 'bg-purple-100 text-purple-800';
+        default: return 'bg-gray-100 text-gray-800';
+    }
+}
+
+// Helper para obtener visibilidad de geocerca
+function getGeofenceVisibility(geofence) {
+    if (geofence.attributes && geofence.attributes.visibleOnMap !== undefined) {
+        return geofence.attributes.visibleOnMap;
+    }
+    return true; // Por defecto visible
+}
+
+// Actualizar contadores
+function updateCounters() {
+    const total = geofences.length;
+    document.getElementById('totalGeofences').textContent = total;
+    document.getElementById('geofenceCount').textContent = `${total} geocerca${total !== 1 ? 's' : ''}`;
+}
+
+// Toggle visibilidad (ahora usa API)
+async function toggleVisibility(geofenceId) {
+    const geofence = geofences.find(g => g.id === geofenceId);
+    if (!geofence) return;
+    
+    const currentVisibility = getGeofenceVisibility(geofence);
+    const newVisibility = !currentVisibility;
+    
+    try {
+        console.log(`🔷 [GEOFENCES] Actualizando visibilidad geocerca ${geofenceId}: ${newVisibility}`);
+        
+        const requestBody = { visible: newVisibility };
+        console.log('📤 [GEOFENCES] Enviando request body:', JSON.stringify(requestBody));
+        
+        const response = await fetch(`/api/geofences/${geofenceId}/visibility`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            credentials: 'include',
+            body: JSON.stringify(requestBody)
+        });
+        
+        console.log('📥 [GEOFENCES] Response status:', response.status);
+        console.log('📥 [GEOFENCES] Response headers:', response.headers);
+        
+        if (!response.ok) {
+            throw new Error(`Error ${response.status}: ${response.statusText}`);
+        }
+        
+        const result = await response.json();
+        console.log('✅ [GEOFENCES] Visibilidad actualizada:', result);
+        
+        // Actualizar el objeto local
+        if (!geofence.attributes) {
+            geofence.attributes = {};
+        }
+        geofence.attributes.visibleOnMap = newVisibility;
+        
+        // Actualizar tabla para reflejar el cambio
+        renderGeofencesTable();
+        
+        showSuccess(`Geocerca ${newVisibility ? 'mostrada' : 'ocultada'} en el mapa`);
+        
+    } catch (error) {
+        console.error('❌ [GEOFENCES] Error actualizando visibilidad:', error);
+        showError('Error actualizando visibilidad: ' + error.message);
+    }
+}
+
+// Helper para actualizar visibilidad via API
+async function updateGeofenceVisibilityAPI(geofenceId, visible) {
+    try {
+        const response = await fetch(`/api/geofences/${geofenceId}/visibility`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            credentials: 'include',
+            body: JSON.stringify({ visible: visible })
+        });
+        
+        if (!response.ok) {
+            throw new Error(`Error ${response.status}: ${response.statusText}`);
+        }
+        
+        // Actualizar objeto local
+        const geofence = geofences.find(g => g.id === geofenceId);
+        if (geofence) {
+            if (!geofence.attributes) {
+                geofence.attributes = {};
+            }
+            geofence.attributes.visibleOnMap = visible;
+        }
+        
+        console.log(`✅ [GEOFENCES] Visibilidad actualizada via API: ${geofenceId} = ${visible}`);
+        
+    } catch (error) {
+        console.error('❌ [GEOFENCES] Error actualizando visibilidad via API:', error);
+        throw error;
+    }
+}
+
+// Editar geocerca
+function editGeofence(geofenceId) {
+    const geofence = geofences.find(g => g.id === geofenceId);
+    if (!geofence) return;
+    
+    currentEditingId = geofenceId;
+    
+    // Llenar formulario
+    document.getElementById('editName').value = geofence.name;
+    document.getElementById('editDescription').value = geofence.description || '';
+    document.getElementById('editVisible').checked = getGeofenceVisibility(geofence);
+    
+    // Mostrar modal
+    document.getElementById('editModal').classList.remove('hidden');
+}
+
+// Cerrar modal de edición
+function closeEditModal() {
+    document.getElementById('editModal').classList.add('hidden');
+    currentEditingId = null;
+}
+
+// Manejar envío del formulario de edición
+document.getElementById('editForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    if (!currentEditingId) return;
+    
+    const formData = new FormData(e.target);
+    const updateData = {
+        name: formData.get('name'),
+        description: formData.get('description'),
+        area: geofences.find(g => g.id === currentEditingId).area, // Mantener área original
+        calendarId: geofences.find(g => g.id === currentEditingId).calendarId || 0,
+        attributes: geofences.find(g => g.id === currentEditingId).attributes || {}
+    };
+    
+    try {
+        console.log('🔷 [GEOFENCES] Actualizando geocerca:', currentEditingId);
+        
+        const response = await fetch(`/api/geofences/${currentEditingId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            credentials: 'include',
+            body: JSON.stringify(updateData)
+        });
+        
+        if (!response.ok) {
+            throw new Error(`Error ${response.status}: ${response.statusText}`);
+        }
+        
+        const result = await response.json();
+        console.log('✅ [GEOFENCES] Geocerca actualizada:', result);
+        
+        // Actualizar visibilidad si cambió
+        const isVisible = formData.get('visible') === 'on';
+        
+        // Actualizar visibilidad usando API
+        if (isVisible !== getGeofenceVisibility(geofences.find(g => g.id === currentEditingId))) {
+            await updateGeofenceVisibilityAPI(currentEditingId, isVisible);
+        }
+        
+        showSuccess('Geocerca actualizada exitosamente');
+        closeEditModal();
+        loadGeofences(); // Recargar lista
+        
+    } catch (error) {
+        console.error('❌ [GEOFENCES] Error actualizando geocerca:', error);
+        showError('Error actualizando geocerca: ' + error.message);
+    }
+});
+
+// Eliminar geocerca
+async function deleteGeofence(geofenceId, geofenceName) {
+    if (!confirm(`¿Estás seguro de que quieres eliminar la geocerca "${geofenceName}"?`)) {
+        return;
+    }
+    
+    try {
+        console.log('🔷 [GEOFENCES] Eliminando geocerca:', geofenceId);
+        
+        const response = await fetch(`/api/geofences/${geofenceId}`, {
+            method: 'DELETE',
+            credentials: 'include'
+        });
+        
+        if (!response.ok) {
+            throw new Error(`Error ${response.status}: ${response.statusText}`);
+        }
+        
+        console.log('✅ [GEOFENCES] Geocerca eliminada');
+        
+        // No necesitamos limpiar localStorage ya que usamos API
+        
+        showSuccess('Geocerca eliminada exitosamente');
+        loadGeofences(); // Recargar lista
+        
+    } catch (error) {
+        console.error('❌ [GEOFENCES] Error eliminando geocerca:', error);
+        showError('Error eliminando geocerca: ' + error.message);
+    }
+}
+
+// Actualizar geocercas
+function refreshGeofences() {
+    loadGeofences();
+}
+
+// Toggle masivo de visibilidad de geocercas
+async function toggleAllGeofences(visible) {
+    if (geofences.length === 0) {
+        showError('No hay geocercas para actualizar');
+        return;
+    }
+    
+    const action = visible ? 'mostrar' : 'ocultar';
+    const confirmMessage = `¿Estás seguro de que quieres ${action} todas las geocercas (${geofences.length} total)?`;
+    
+    if (!confirm(confirmMessage)) {
+        return;
+    }
+    
+    showLoading(true);
+    hideMessages();
+    
+    let successCount = 0;
+    let errorCount = 0;
+    const errors = [];
+    
+    console.log(`🔷 [GEOFENCES] Iniciando toggle masivo: ${action} ${geofences.length} geocercas`);
+    
+    // Mostrar progreso inicial
+    showProgress(0, geofences.length, `Iniciando ${action} masivo...`);
+    
+    // Procesar geocercas en lotes para evitar sobrecargar el servidor
+    const batchSize = 5;
+    for (let i = 0; i < geofences.length; i += batchSize) {
+        const batch = geofences.slice(i, i + batchSize);
+        
+        // Procesar lote en paralelo
+        const batchPromises = batch.map(async (geofence) => {
+            const currentVisibility = getGeofenceVisibility(geofence);
+            
+            // Solo actualizar si es necesario
+            if (currentVisibility !== visible) {
+                try {
+                    console.log(`🔄 [GEOFENCES] Actualizando geocerca ${geofence.name} (ID: ${geofence.id}): ${currentVisibility} → ${visible}`);
+                    
+                    const response = await fetch(`/api/geofences/${geofence.id}/visibility`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        credentials: 'include',
+                        body: JSON.stringify({ visible: visible })
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error(`Error ${response.status}: ${response.statusText}`);
+                    }
+                    
+                    // Actualizar objeto local
+                    if (!geofence.attributes) {
+                        geofence.attributes = {};
+                    }
+                    geofence.attributes.visibleOnMap = visible;
+                    
+                    successCount++;
+                    console.log(`✅ [GEOFENCES] Geocerca ${geofence.name} actualizada exitosamente`);
+                    
+                } catch (error) {
+                    errorCount++;
+                    const errorMsg = `Geocerca ${geofence.name}: ${error.message}`;
+                    errors.push(errorMsg);
+                    console.error(`❌ [GEOFENCES] Error actualizando geocerca ${geofence.name}:`, error);
+                }
+            } else {
+                console.log(`⏭️ [GEOFENCES] Geocerca ${geofence.name} ya está ${visible ? 'visible' : 'oculta'}, omitiendo`);
+            }
+        });
+        
+        // Esperar a que termine el lote
+        await Promise.all(batchPromises);
+        
+        // Actualizar progreso
+        const processed = Math.min(i + batchSize, geofences.length);
+        showProgress(processed, geofences.length, `Procesando... ${processed}/${geofences.length}`);
+        
+        // Pequeña pausa entre lotes para no sobrecargar
+        if (i + batchSize < geofences.length) {
+            await new Promise(resolve => setTimeout(resolve, 200));
+        }
+    }
+    
+    showLoading(false);
+    
+    // Actualizar tabla para reflejar cambios
+    renderGeofencesTable();
+    
+    // Mostrar resultado
+    if (errorCount === 0) {
+        showSuccess(`✅ Todas las geocercas ${visible ? 'mostradas' : 'ocultadas'} exitosamente (${successCount} actualizadas)`);
+    } else if (successCount > 0) {
+        showSuccess(`⚠️ Operación completada parcialmente: ${successCount} exitosas, ${errorCount} fallidas`);
+        console.warn('❌ [GEOFENCES] Errores en toggle masivo:', errors);
+    } else {
+        showError(`❌ Error actualizando geocercas. Revisa la consola para más detalles.`);
+        console.error('❌ [GEOFENCES] Todos los updates fallaron:', errors);
+    }
+    
+    console.log(`🏁 [GEOFENCES] Toggle masivo completado: ${successCount} exitosas, ${errorCount} fallidas`);
+}
+
+// Funciones de UI
+function showLoading(show) {
+    const loadingState = document.getElementById('loadingState');
+    const geofencesContent = document.getElementById('geofencesContent');
+    
+    if (show) {
+        // Restaurar contenido original del loading
+        loadingState.innerHTML = `
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500"></div>
+        `;
+        loadingState.classList.remove('hidden');
+        geofencesContent.classList.add('opacity-50');
+    } else {
+        loadingState.classList.add('hidden');
+        geofencesContent.classList.remove('opacity-50');
+    }
+}
+
+function showError(message) {
+    const errorState = document.getElementById('errorState');
+    const errorMessage = document.getElementById('errorMessage');
+    
+    errorMessage.textContent = message;
+    errorState.classList.remove('hidden');
+    
+    setTimeout(() => {
+        errorState.classList.add('hidden');
+    }, 5000);
+}
+
+function showSuccess(message) {
+    const successState = document.getElementById('successState');
+    const successMessage = document.getElementById('successMessage');
+    
+    successMessage.textContent = message;
+    successState.classList.remove('hidden');
+    
+    setTimeout(() => {
+        successState.classList.add('hidden');
+    }, 3000);
+}
+
+function hideMessages() {
+    document.getElementById('errorState').classList.add('hidden');
+    document.getElementById('successState').classList.add('hidden');
+}
+
+// Mostrar progreso de operaciones masivas
+function showProgress(current, total, message) {
+    const loadingState = document.getElementById('loadingState');
+    const percentage = total > 0 ? Math.round((current / total) * 100) : 0;
+    
+    loadingState.innerHTML = `
+        <div class="text-center">
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500 mx-auto mb-4"></div>
+            <p class="text-gray-600 mb-2">${message}</p>
+            <div class="w-64 mx-auto bg-gray-200 rounded-full h-2">
+                <div class="bg-purple-600 h-2 rounded-full transition-all duration-300" style="width: ${percentage}%"></div>
+            </div>
+            <p class="text-sm text-gray-500 mt-2">${percentage}% completado</p>
+        </div>
+    `;
+    
+    loadingState.classList.remove('hidden');
+}
+
+// Cerrar modal con ESC
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        closeEditModal();
+    }
+});
+</script>
+{{end}}

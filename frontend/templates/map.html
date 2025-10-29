@@ -1,0 +1,2899 @@
+{{template "layout.html" .}}
+
+{{define "map-content"}}
+<div id="mapContainer" class="h-screen flex flex-col bg-gradient-to-br from-gray-50 to-gray-100">
+    <!-- Header Mejorado con diseño más moderno -->
+    <div class="bg-white/95 backdrop-blur-md shadow-lg border-b border-gray-200/50 p-4 relative z-10">
+        <!-- Breadcrumb Mejorado -->
+        <nav class="flex mb-3" aria-label="Breadcrumb">
+            <ol class="inline-flex items-center space-x-1 md:space-x-2">
+                <li class="inline-flex items-center">
+                    <a href="/dashboard" class="inline-flex items-center text-sm font-medium text-gray-600 hover:text-indigo-600 transition-all duration-200 hover:scale-105">
+                        <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"></path>
+                        </svg>
+                        Dashboard
+                    </a>
+                </li>
+                <li>
+                    <div class="flex items-center">
+                        <svg class="w-5 h-5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
+                        </svg>
+                        <span class="ml-1 text-sm font-medium text-indigo-600 md:ml-2">🗺️ Mapa en Tiempo Real</span>
+                    </div>
+                </li>
+            </ol>
+        </nav>
+        
+        <div class="flex justify-between items-center">
+            <div class="flex items-center space-x-4">
+                <!-- Título con gradiente -->
+                <div>
+                    <h1 class="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">Mapa en Tiempo Real</h1>
+                    <p class="text-sm text-gray-500 mt-1">Monitoreo GPS de dispositivos</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center space-x-3">
+                <!-- Indicador de estado mejorado -->
+                <div class="flex items-center space-x-2 bg-gray-50 rounded-full px-4 py-2">
+                    <div id="statusIndicator" class="w-3 h-3 bg-gray-400 rounded-full animate-pulse"></div>
+                    <span id="statusText" class="text-sm font-medium text-gray-600">Conectando...</span>
+                </div>
+                
+                <!-- Toggle auto-refresh con mejor diseño -->
+                <label class="flex items-center space-x-2 bg-gray-50 rounded-full px-4 py-2 cursor-pointer hover:bg-gray-100 transition-all duration-200">
+                    <input type="checkbox" id="autoRefresh" checked class="rounded text-indigo-600 focus:ring-2 focus:ring-indigo-500">
+                    <span class="text-sm font-medium text-gray-700">Auto-actualizar</span>
+                    <svg class="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                    </svg>
+                </label>
+                
+                <!-- Dropdown de acciones con mejor diseño -->
+                <div class="relative" id="mapActionsDropdown" style="z-index: 10001;">
+                    <button id="mapActionsBtn" 
+                            class="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
+                            onclick="toggleMapActionsDropdown()">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4"></path>
+                        </svg>
+                        <span class="hidden sm:inline font-medium">Acciones</span>
+                        <svg class="w-4 h-4 transition-transform duration-200" id="dropdownArrow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                        </svg>
+                    </button>
+                    
+                    <!-- Dropdown Menu -->
+                    <div id="mapActionsMenu" 
+                         class="absolute right-0 mt-2 w-72 bg-white rounded-xl shadow-2xl border border-gray-100 hidden transform opacity-0 scale-95 transition-all duration-200"
+                         style="z-index: 10000;">
+                        <div class="py-2">
+                            <!-- Geocercas Section -->
+                            <div class="px-4 py-2 border-b border-gray-100">
+                                <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">🔷 Geocercas</h3>
+                                <div class="space-y-1">
+                                    <button onclick="toggleGeofences()" 
+                                            class="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 rounded-md flex items-center space-x-3 transition-colors">
+                                        <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"></path>
+                                        </svg>
+                                        <div>
+                                            <div class="font-medium">Mostrar/Ocultar Geocercas</div>
+                                            <div class="text-xs text-gray-500">Toggle visibilidad</div>
+                                        </div>
+                                    </button>
+                                    <button id="refreshGeofencesBtn" onclick="refreshGeofences()"
+                                            class="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-purple-50 hover:text-purple-700 rounded-md flex items-center space-x-3 transition-colors">
+                                        <svg class="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                                        </svg>
+                                        <div>
+                                            <div class="font-medium">Actualizar Geocercas</div>
+                                            <div class="text-xs text-gray-500">Sincronizar desde servidor</div>
+                                        </div>
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <!-- Vista del Mapa Section -->
+                            <div class="px-4 py-2 border-b border-gray-100">
+                                <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">🌍 Vista del Mapa</h3>
+                                <div class="space-y-1">
+                                    <button onclick="toggleQuickView()" 
+                                            class="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-md flex items-center space-x-3 transition-colors">
+                                        <svg class="w-4 h-4 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                                        </svg>
+                                        <div>
+                                            <div class="font-medium">Cambiar Vista</div>
+                                            <div class="text-xs text-gray-500" id="currentViewTextDropdown">Vista actual: Estándar</div>
+                                        </div>
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <!-- Reportes y Datos Section -->
+                            <div class="px-4 py-2 border-b border-gray-100">
+                                <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">📊 Reportes y Datos</h3>
+                                <div class="space-y-1">
+                                    <button onclick="openReportsModal(); closeMapActionsDropdown();" 
+                                            class="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-green-50 hover:text-green-700 rounded-md flex items-center space-x-3 transition-colors">
+                                        <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                        </svg>
+                                        <div>
+                                            <div class="font-medium">Ver Reportes</div>
+                                            <div class="text-xs text-gray-500">Estado de dispositivos</div>
+                                        </div>
+                                    </button>
+                                    <button onclick="refreshMap(); closeMapActionsDropdown();" 
+                                            class="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-indigo-50 hover:text-indigo-700 rounded-md flex items-center space-x-3 transition-colors">
+                                        <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                                        </svg>
+                                        <div>
+                                            <div class="font-medium">Actualizar Mapa</div>
+                                            <div class="text-xs text-gray-500">Recargar posiciones</div>
+                                        </div>
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <!-- Configuración Section -->
+                            <div class="px-4 py-2">
+                                <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">⚙️ Configuración</h3>
+                                <div class="space-y-1">
+                                    <button onclick="openMapSettings(); closeMapActionsDropdown();" 
+                                            class="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-gray-900 rounded-md flex items-center space-x-3 transition-colors">
+                                        <svg class="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                        </svg>
+                                        <div>
+                                            <div class="font-medium">Configuración del Mapa</div>
+                                            <div class="text-xs text-gray-500">Preferencias y opciones</div>
+                                        </div>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Quick Action Buttons (Most Used) -->
+                <div class="flex items-center space-x-2">
+                    <!-- Quick Refresh Button -->
+                    <button onclick="refreshMap()" 
+                            class="bg-gray-100 hover:bg-gray-200 text-gray-700 p-2 rounded-lg transition-all duration-200 hover:shadow-md"
+                            title="Actualización rápida">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                        </svg>
+                    </button>
+                    
+                    <!-- Quick Reports Button -->
+                    <button onclick="openReportsModal()" 
+                            class="bg-green-100 hover:bg-green-200 text-green-700 p-2 rounded-lg transition-all duration-200 hover:shadow-md"
+                            title="Ver reportes rápido">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main content -->
+    <div class="flex-1 flex overflow-hidden">
+        <!-- Sidebar Mejorado con mejor diseño -->
+        <div class="w-80 bg-white/95 backdrop-blur-sm border-r border-gray-200/50 flex flex-col shadow-xl transition-all duration-300">
+            <!-- Header del Sidebar con gradiente -->
+            <div class="p-4 border-b border-gray-200/50 bg-gradient-to-br from-indigo-50 to-purple-50">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">📱 Dispositivos</h3>
+                    <span id="devicesCounter" class="px-3 py-1 bg-white/80 rounded-full text-sm font-medium text-gray-700 shadow-sm">0 total</span>
+                </div>
+                
+                <!-- Buscador mejorado con animación -->
+                <div class="relative mb-4 group">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <svg class="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                        </svg>
+                    </div>
+                    <input type="text" id="deviceSearch" 
+                           class="block w-full pl-10 pr-3 py-2.5 border-2 border-gray-200 rounded-xl leading-5 bg-white/90 placeholder-gray-400 focus:outline-none focus:placeholder-gray-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm transition-all duration-200 hover:border-gray-300" 
+                           placeholder="🔍 Buscar vehículo...">
+                    <div id="searchClear" class="absolute inset-y-0 right-0 pr-3 flex items-center cursor-pointer hidden">
+                        <svg class="h-4 w-4 text-gray-400 hover:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </div>
+                </div>
+                
+                <!-- Filtros por Estado con mejor diseño -->
+                <div class="flex space-x-2 mb-4">
+                    <button id="filterAll" class="filter-btn active flex-1 px-3 py-2.5 text-xs font-semibold rounded-lg transition-all duration-200 transform hover:scale-105">
+                        📍 Todos <span id="countAll" class="ml-1 px-1.5 py-0.5 bg-white/50 rounded-full">0</span>
+                    </button>
+                    <button id="filterOnline" class="filter-btn flex-1 px-3 py-2.5 text-xs font-semibold rounded-lg transition-all duration-200 transform hover:scale-105">
+                        🟢 Online <span id="countOnline" class="ml-1 px-1.5 py-0.5 bg-white/50 rounded-full">0</span>
+                    </button>
+                    <button id="filterOffline" class="filter-btn flex-1 px-3 py-2.5 text-xs font-semibold rounded-lg transition-all duration-200 transform hover:scale-105">
+                        🔴 Offline <span id="countOffline" class="ml-1 px-1.5 py-0.5 bg-white/50 rounded-full">0</span>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Lista de Dispositivos con scroll suave -->
+            <div class="flex-1 overflow-y-auto custom-scrollbar">
+                <div class="p-4">
+                    <!-- Loading state -->
+                    <div id="devicesLoading" class="text-center py-8 hidden">
+                        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500 mx-auto mb-2"></div>
+                        <p class="text-sm text-gray-600">Cargando dispositivos...</p>
+                    </div>
+                    
+                    <!-- Devices list -->
+                    <div id="devicesList" class="space-y-3">
+                        <!-- Devices will be populated here -->
+                    </div>
+                    
+                    <!-- Empty state -->
+                    <div id="devicesEmptyState" class="text-center py-8 hidden">
+                        <svg class="mx-auto h-12 w-12 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+                        </svg>
+                        <p class="text-gray-600">No hay dispositivos</p>
+                    </div>
+                    
+                    <!-- No search results -->
+                    <div id="noSearchResults" class="text-center py-8 hidden">
+                        <svg class="mx-auto h-12 w-12 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                        </svg>
+                        <p class="text-gray-600">No se encontraron vehículos</p>
+                        <p class="text-sm text-gray-500 mt-1">Intenta con otro término de búsqueda</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Paginación -->
+            <div id="paginationContainer" class="border-t border-gray-200 p-4 hidden">
+                <div class="flex items-center justify-between">
+                    <div class="text-sm text-gray-700">
+                        Mostrando <span id="showingFrom">1</span>-<span id="showingTo">10</span> de <span id="totalResults">0</span>
+                    </div>
+                    <div class="flex space-x-2">
+                        <button id="prevPage" class="px-3 py-1 text-sm border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+                            ← Anterior
+                        </button>
+                        <div id="pageNumbers" class="flex space-x-1">
+                            <!-- Page numbers will be populated here -->
+                        </div>
+                        <button id="nextPage" class="px-3 py-1 text-sm border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+                            Siguiente →
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Map container con transición suave -->
+        <div class="flex-1 relative overflow-hidden">
+            <div id="map" class="w-full h-full rounded-tl-2xl shadow-inner"></div>
+            
+            <!-- Widget de Velocímetro Simplificado (KISS) -->
+            <div id="speedometerWidget" class="absolute bottom-6 right-6 bg-white/80 backdrop-blur-sm shadow-xl border border-gray-200/50 px-6 py-4 transform translate-x-full opacity-0 transition-all duration-300" style="z-index: 1000; min-width: 220px; border-radius: 50px;">
+                <!-- Header compacto -->
+                <div class="flex items-center justify-between mb-3">
+                    <div class="flex items-center space-x-2">
+                        <div id="statusIndicatorWidget" class="w-2 h-2 bg-green-500 rounded-full"></div>
+                        <span id="speedometerVehicleName" class="text-sm font-semibold text-gray-800 truncate max-w-[120px]">---</span>
+                    </div>
+                    <button onclick="closeSpeedometerWidget()" class="text-gray-400 hover:text-gray-600">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+                
+                <!-- Velocidad grande -->
+                <div class="text-center py-4">
+                    <div class="text-6xl font-bold bg-gradient-to-br from-indigo-500 to-purple-600 bg-clip-text text-transparent" id="speedValue">0</div>
+                    <div class="text-sm text-gray-500 mt-1">km/h</div>
+                </div>
+                
+                <!-- Info compacta -->
+                <div class="flex justify-between text-xs text-gray-600 pt-3 border-t border-gray-100">
+                    <span>Máx: <strong id="maxSpeed">0</strong></span>
+                    <span id="speedLastUpdate">--:--:--</span>
+                </div>
+            </div>
+            
+            <!-- Loading overlay mejorado -->
+            <div id="mapLoading" class="absolute inset-0 bg-gradient-to-br from-indigo-50/95 to-purple-50/95 backdrop-blur-sm flex items-center justify-center z-50">
+                <div class="text-center">
+                    <div class="relative">
+                        <div class="animate-spin rounded-full h-16 w-16 border-4 border-indigo-200 border-t-indigo-600 mx-auto mb-4"></div>
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <svg class="w-8 h-8 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"></path>
+                            </svg>
+                        </div>
+                    </div>
+                    <p class="text-gray-700 font-medium text-lg">Cargando mapa...</p>
+                    <p class="text-gray-500 text-sm mt-2">Preparando vista de dispositivos</p>
+                </div>
+            </div>
+            
+            <!-- Panel de Reportes Flotante -->
+            <div id="reportsPanel" class="absolute top-4 left-4 right-4 bg-white rounded-lg shadow-2xl border border-gray-200 hidden" style="z-index: 10002; max-height: 80vh; overflow-y: auto; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);">
+                <!-- Header del Panel -->
+                <div class="flex justify-between items-center p-4 border-b border-gray-200">
+                    <div class="flex items-center space-x-3">
+                        <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                        <h3 class="text-lg font-semibold text-gray-900">Reporte de Dispositivos</h3>
+                        <span id="reportDateTime2" class="text-sm text-gray-500">--</span>
+                    </div>
+                    
+                    <div class="flex items-center space-x-3">
+                        <!-- Filtros rápidos -->
+                        <div class="flex space-x-2">
+                            <button id="quickFilterAll" class="quick-filter active px-3 py-1 text-xs rounded-full" onclick="setQuickFilter('all')">
+                                Todos (<span id="quickCountAll">0</span>)
+                            </button>
+                            <button id="quickFilterOnline" class="quick-filter px-3 py-1 text-xs rounded-full" onclick="setQuickFilter('online')">
+                                🟢 Online (<span id="quickCountOnline">0</span>)
+                            </button>
+                            <button id="quickFilterOffline" class="quick-filter px-3 py-1 text-xs rounded-full" onclick="setQuickFilter('offline')">
+                                🔴 Offline (<span id="quickCountOffline">0</span>)
+                            </button>
+                        </div>
+                        
+                        <button onclick="downloadExcelReport()" class="px-3 py-1 bg-green-600 text-white rounded-md hover:bg-green-700 text-sm flex items-center space-x-1">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                            </svg>
+                            <span>Excel</span>
+                        </button>
+                        <button onclick="refreshReportTable()" class="px-3 py-1 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 text-sm">
+                            🔄
+                        </button>
+                        <button onclick="closeReportsPanel()" class="text-gray-400 hover:text-gray-600">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Tabla de Dispositivos -->
+                <div class="max-h-80 overflow-y-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50 sticky top-0">
+                            <tr>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Dispositivo</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tipo</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">SIM Card</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Última Conexión</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ubicación</th>
+                                <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody id="reportTableBody" class="bg-white divide-y divide-gray-200">
+                            <!-- Filas se generarán aquí -->
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- Footer con estadísticas -->
+                <div class="px-4 py-3 bg-gray-50 border-t border-gray-200 text-sm text-gray-600">
+                    📊 Total: <span id="footerTotal">0</span> dispositivos | 
+                    🟢 Conectados: <span id="footerOnline">0</span> | 
+                    🔴 Desconectados: <span id="footerOffline">0</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+<!-- Leaflet CSS -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" 
+      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" 
+      crossorigin=""/>
+
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+        crossorigin=""></script>
+
+<!-- SheetJS para generar archivos Excel -->
+<script src="https://unpkg.com/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+<script>
+// Variables globales
+let map;
+let markers = {};
+let devices = [];
+let positions = [];
+let autoRefreshInterval;
+let isAutoRefreshEnabled = true;
+
+// Variables para el widget de velocímetro
+let selectedDeviceForSpeedometer = null;
+let speedometerMaxSpeed = 0;
+
+// Variables para sidebar mejorado
+let allPositions = []; // Todas las posiciones sin filtrar
+let filteredPositions = []; // Posiciones filtradas por búsqueda/estado
+let currentPage = 1;
+let itemsPerPage = 10;
+let currentFilter = 'all'; // 'all', 'online', 'offline'
+let searchTerm = '';
+
+// Variables para reportes
+let currentReportFilter = 'all'; // 'all', 'online', 'offline'
+let reportVisible = false;
+
+// Variables para geocercas
+let geofences = []; // Todas las geocercas
+let geofenceLayer = null; // Capa de geocercas en Leaflet
+let geofencesVisible = true; // Control de visibilidad
+
+// Variables para dropdown de acciones del mapa
+let mapActionsDropdownOpen = false;
+
+// ===== CÁLCULO DE ESTADO DE DISPOSITIVOS =====
+
+// Calcular estado real del dispositivo basado en tiempo GPS vs servidor
+function calculateDeviceStatus(position) {
+    if (!position.serverTime && !position.deviceTime) {
+        console.log(`⚠️ [STATUS] Dispositivo ${position.deviceId}: Sin timestamps`);
+        return 'unknown';
+    }
+    
+    const now = new Date();
+    
+    // Usar serverTime (más confiable) o deviceTime como fallback
+    const lastUpdate = position.serverTime ? 
+        new Date(position.serverTime) : 
+        new Date(position.deviceTime);
+    
+    // Calcular diferencia en minutos
+    const diffMs = now - lastUpdate;
+    const diffMinutes = Math.floor(diffMs / (1000 * 60));
+    
+    console.log(`📊 [STATUS] Dispositivo ${position.deviceId}: Última actualización hace ${diffMinutes} minutos`);
+    
+    // Criterios de estado basados en tiempo
+    if (diffMinutes <= 5) {
+        return 'online';      // Menos de 5 minutos = En línea
+    } else if (diffMinutes <= 15) {
+        return 'warning';     // 5-15 minutos = Advertencia
+    } else {
+        return 'offline';     // Más de 15 minutos = Desconectado
+    }
+}
+
+// Obtener texto descriptivo del estado
+function getStatusDescription(status, lastUpdateTime) {
+    const now = new Date();
+    const diffMs = now - lastUpdateTime;
+    const diffMinutes = Math.floor(diffMs / (1000 * 60));
+    
+    switch (status) {
+        case 'online':
+            return `En línea (${diffMinutes} min)`;
+        case 'warning':
+            return `Inactivo (${diffMinutes} min)`;
+        case 'offline':
+            return `Desconectado (${diffMinutes} min)`;
+        default:
+            return 'Estado desconocido';
+    }
+}
+
+// Función para crear iconos personalizados con vehículos
+function createDeviceIcon(deviceStatus, deviceName, isMoving = false) {
+    const statusColors = {
+        online: '#10b981',    // Verde
+        warning: '#f59e0b',   // Amarillo
+        offline: '#6b7280',   // Gris
+        unknown: '#ef4444'    // Rojo
+    };
+    
+    const statusColor = statusColors[deviceStatus] || statusColors.unknown;
+    
+    // VALIDACIÓN: Asegurar que deviceName no sea undefined/null/empty
+    const safeName = deviceName && deviceName.trim() ? deviceName : 'Dispositivo';
+    
+    // SVG del vehículo mejorado con color dinámico
+    const vehicleSVG = `
+        <svg width="26" height="26" viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <!-- Sombra del vehículo -->
+            <ellipse cx="13" cy="22" rx="8" ry="2" fill="rgba(0,0,0,0.2)"/>
+            
+            <!-- Cuerpo principal del vehículo -->
+            <path d="M6 12L7.5 7H18.5L20 12V18H18V16H8V18H6V12Z" fill="${statusColor}" stroke="white" stroke-width="1.5" stroke-linejoin="round"/>
+            
+            <!-- Techo/cabina -->
+            <path d="M8 7L9 10H17L18 7H8Z" fill="rgba(255,255,255,0.4)" stroke="white" stroke-width="1" stroke-linejoin="round"/>
+            
+            <!-- Parabrisas delantero -->
+            <path d="M17 10L18 7" stroke="rgba(255,255,255,0.6)" stroke-width="1.5" stroke-linecap="round"/>
+            
+            <!-- Parabrisas trasero -->
+            <path d="M9 10L8 7" stroke="rgba(255,255,255,0.6)" stroke-width="1.5" stroke-linecap="round"/>
+            
+            <!-- Ruedas con detalles -->
+            <circle cx="9" cy="16" r="2" fill="#374151" stroke="white" stroke-width="1.2"/>
+            <circle cx="9" cy="16" r="1" fill="#6b7280"/>
+            <circle cx="17" cy="16" r="2" fill="#374151" stroke="white" stroke-width="1.2"/>
+            <circle cx="17" cy="16" r="1" fill="#6b7280"/>
+            
+            <!-- Luces delanteras -->
+            <circle cx="20" cy="13" r="1" fill="#fbbf24" stroke="white" stroke-width="0.8"/>
+            
+            <!-- Luces traseras -->
+            <circle cx="6" cy="13" r="0.8" fill="#ef4444" stroke="white" stroke-width="0.6"/>
+            
+            <!-- Indicador de estado (más prominente) -->
+            <circle cx="21" cy="8" r="2.5" fill="${statusColor}" stroke="white" stroke-width="2"/>
+            <circle cx="21" cy="8" r="1.2" fill="white" opacity="0.8"/>
+        </svg>
+    `;
+    
+    return L.divIcon({
+        className: 'custom-vehicle-marker',
+        html: `
+            <div class="vehicle-marker-container ${isMoving ? 'moving' : ''}">
+                <div class="vehicle-icon-wrapper">
+                    ${vehicleSVG}
+                </div>
+                <div class="vehicle-label">${safeName}</div>
+                ${isMoving ? '<div class="movement-indicator">🟢</div>' : ''}
+            </div>
+        `,
+        iconSize: [80, 60],
+        iconAnchor: [40, 30]
+    });
+}
+
+// Inicialización
+// Inicialización
+document.addEventListener('DOMContentLoaded', function() {
+    if (!window.location.pathname.startsWith('/map')) {
+        console.log('🙫 [MAP] No estamos en página de mapa');
+        return;
+    }
+    
+    console.log('🗺️ [MAP] Inicializando mapa en tiempo real');
+    initializeMap();
+    loadMapData();
+    loadGeofences(); // Cargar geocercas
+    setupAutoRefresh();
+});
+
+// Inicializar mapa con Leaflet + Múltiples capas
+function initializeMap() {
+    console.log('🗺️ [MAP] Inicializando Leaflet con múltiples capas');
+    
+    // Crear mapa centrado en Lima, Perú por defecto
+    map = L.map('map').setView([-12.0464, -77.0428], 13);
+    
+    // Definir capas base disponibles
+    const baseLayers = {
+        // Capa principal (la que ya tenías)
+        "🗺️ Mapa Estándar": L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+            maxZoom: 19
+        }),
+        
+        // Vista satelital gratuita (Esri World Imagery)
+        "🛰️ Vista Satélite": L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+            attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community',
+            maxZoom: 18
+        }),
+        
+        // Mapa topográfico
+        "🏔️ Topográfico": L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+            attribution: 'Map data: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, <a href="http://viewfinderpanoramas.org">SRTM</a> | Map style: &copy; <a href="https://opentopomap.org">OpenTopoMap</a> (<a href="https://creativecommons.org/licenses/by-sa/3.0/">CC-BY-SA</a>)',
+            maxZoom: 17
+        }),
+        
+        // Mapa en escala de grises
+        "🎨 Escala de Grises": L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+            subdomains: 'abcd',
+            maxZoom: 19
+        }),
+        
+        // Mapa oscuro
+        "🌙 Modo Oscuro": L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+            subdomains: 'abcd',
+            maxZoom: 19
+        })
+    };
+    
+    // Capas de overlay (tráfico, transporte, etc.)
+    const overlayLayers = {
+        // Capa de transporte público (usando OpenStreetMap con estilo de transporte)
+        "🚌 Transporte Público": L.tileLayer('https://{s}.tile.openstreetmap.de/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+            maxZoom: 18,
+            opacity: 0.6,
+            // Filtro CSS para resaltar líneas de transporte
+            className: 'transport-layer'
+        }),
+        
+        // Capa de ciclovías y rutas peatonales
+        "🚴 Ciclovías": L.tileLayer('https://{s}.tile-cyclosm.openstreetmap.fr/cyclosm/{z}/{x}/{y}.png', {
+            attribution: '<a href="https://github.com/cyclosm/cyclosm-cartocss-style/releases" title="CyclOSM - Open Bicycle render">CyclOSM</a> | Map data: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+            maxZoom: 20,
+            opacity: 0.7
+        }),
+        
+        // Capa de tráfico y carreteras principales
+        "🚗 Vías Principales": L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, Tiles style by <a href="https://www.hotosm.org/" target="_blank">Humanitarian OpenStreetMap Team</a> hosted by <a href="https://openstreetmap.fr/" target="_blank">OpenStreetMap France</a>',
+            maxZoom: 19,
+            opacity: 0.6
+        }),
+        
+        // Capa de relieve y elevación
+        "🏔️ Relieve": L.tileLayer('https://{s}.tiles.wmflabs.org/hillshading/{z}/{x}/{y}.png', {
+            attribution: 'Hillshading: SRTM3 v2 (<a href="https://lpdaac.usgs.gov/products/srtmgl3v003/">NASA EOSDIS</a>)',
+            maxZoom: 16,
+            opacity: 0.5
+        }),
+        
+        // Capa de límites administrativos
+        "🏢 Límites": L.tileLayer('https://{s}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png', {
+            attribution: '&copy; Openstreetmap France | &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+            maxZoom: 20,
+            opacity: 0.5
+        })
+    };
+    
+    // Agregar capa base por defecto (la original)
+    baseLayers["🗺️ Mapa Estándar"].addTo(map);
+    
+    // Agregar control de capas
+    const layerControl = L.control.layers(baseLayers, overlayLayers, {
+        position: 'topright',
+        collapsed: true
+    }).addTo(map);
+    
+    // Guardar referencia para uso posterior
+    window.mapLayers = {
+        base: baseLayers,
+        overlay: overlayLayers,
+        control: layerControl
+    };
+    
+    console.log('✅ [MAP] Mapa inicializado con múltiples capas');
+    console.log('🌍 [MAP] Capas base disponibles:', Object.keys(baseLayers));
+    console.log('🗺️ [MAP] Capas overlay disponibles:', Object.keys(overlayLayers));
+    
+    // Mostrar notificación de capas disponibles
+    setTimeout(() => {
+        showGeofenceNotification('🌍 Múltiples vistas de mapa disponibles', 'info');
+    }, 2000);
+}
+
+// Cargar datos iniciales del mapa
+async function loadMapData() {
+    try {
+        updateStatus('loading', 'Cargando datos...');
+        
+        const response = await fetch('/api/map/data', {
+            method: 'GET',
+            credentials: 'include'
+        });
+        
+        if (!response.ok) {
+            throw new Error(`Error ${response.status}: ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        console.log('✅ [MAP] Datos del mapa cargados:', data);
+        
+        // Actualizar centro del mapa
+        if (data.center && data.center.latitude && data.center.longitude) {
+            map.setView([data.center.latitude, data.center.longitude], data.zoom || 13);
+        }
+        
+        // Actualizar posiciones y dispositivos
+        positions = data.positions || [];
+        allPositions = [...positions]; // Copia para filtros
+        
+        updateMapMarkers();
+        updateSidebarData();
+        
+        updateStatus('online', `${positions.length} dispositivos`);
+        
+        // Inicializar eventos del sidebar
+        initializeSidebarEvents();
+        
+    } catch (error) {
+        console.error('❌ [MAP] Error cargando datos del mapa:', error);
+        updateStatus('error', 'Error de conexión');
+    } finally {
+        document.getElementById('mapLoading').classList.add('hidden');
+    }
+}
+
+// Actualizar marcadores en el mapa (INTELIGENTE - mueve marcadores existentes)
+function updateMapMarkers() {
+    console.log('📍 [MAP] Actualizando marcadores inteligentemente:', positions.length);
+    
+    // Procesar cada posición nueva
+    positions.forEach(position => {
+        if (position.valid && position.latitude && position.longitude) {
+            const deviceId = position.deviceId;
+            
+            // CALCULAR ESTADO REAL basado en tiempo GPS vs servidor
+            const calculatedStatus = calculateDeviceStatus(position);
+            
+            // VALIDACIÓN MEJORADA: Manejar nombres undefined/null/empty
+            const deviceName = (position.deviceName && position.deviceName.trim()) 
+                ? position.deviceName 
+                : `Dispositivo ${deviceId}`;
+            
+            // Actualizar el objeto position con el estado calculado
+            position.calculatedStatus = calculatedStatus;
+            
+            // Detectar si el vehículo está en movimiento
+            const isMoving = position.speed && position.speed > 0.5; // Más de 0.5 nudos
+            
+            const icon = createDeviceIcon(calculatedStatus, deviceName, isMoving);
+            const newLatLng = [position.latitude, position.longitude];
+            
+            if (markers[deviceId]) {
+                // MARCADOR EXISTE: Mover a nueva posición
+                const oldLatLng = markers[deviceId].getLatLng();
+                const distance = map.distance(oldLatLng, newLatLng);
+                
+                console.log(`🔄 [MAP] Moviendo marcador del dispositivo ${deviceName} (distancia: ${Math.round(distance)}m)`);
+                
+                // Mover marcador a nueva posición (con animación suave si la distancia es pequeña)
+                if (distance < 1000) { // Si se movió menos de 1km, animar
+                    animateMarkerMovement(markers[deviceId], oldLatLng, newLatLng);
+                } else {
+                    markers[deviceId].setLatLng(newLatLng);
+                }
+                
+                // Actualizar icono (incluye nombre y estado)
+                markers[deviceId].setIcon(icon);
+                
+                // Actualizar contenido del popup
+                const popupContent = createPopupContent(position);
+                markers[deviceId].setPopupContent(popupContent);
+                
+            } else {
+                // MARCADOR NO EXISTE: Crear nuevo
+                console.log(`🆕 [MAP] Creando nuevo marcador para dispositivo ${deviceName}`);
+                
+                const marker = L.marker(newLatLng, { icon })
+                    .addTo(map);
+                
+                // Crear popup con información del dispositivo
+                const popupContent = createPopupContent(position);
+                marker.bindPopup(popupContent);
+                
+                // Guardar referencia del marcador
+                markers[deviceId] = marker;
+            }
+        }
+    });
+    
+    console.log('✅ [MAP] Marcadores actualizados inteligentemente. Total:', Object.keys(markers).length);
+    
+    // Log de dispositivos activos
+    const activeDevices = positions.map(p => p.deviceId);
+    console.log('📱 [MAP] Dispositivos con posiciones activas:', activeDevices);
+}
+
+// Animar movimiento suave de marcador
+function animateMarkerMovement(marker, fromLatLng, toLatLng) {
+    const duration = 2000; // 2 segundos de animación
+    const steps = 60; // 60 pasos para animación suave
+    const stepDuration = duration / steps;
+    
+    const latDiff = toLatLng[0] - fromLatLng.lat;
+    const lngDiff = toLatLng[1] - fromLatLng.lng;
+    
+    let currentStep = 0;
+    
+    const animationInterval = setInterval(() => {
+        currentStep++;
+        const progress = currentStep / steps;
+        
+        // Interpolación lineal
+        const currentLat = fromLatLng.lat + (latDiff * progress);
+        const currentLng = fromLatLng.lng + (lngDiff * progress);
+        
+        marker.setLatLng([currentLat, currentLng]);
+        
+        if (currentStep >= steps) {
+            clearInterval(animationInterval);
+            // Asegurar posición final exacta
+            marker.setLatLng(toLatLng);
+        }
+    }, stepDuration);
+}
+
+// Crear contenido del popup
+function createPopupContent(position) {
+    const lastUpdate = position.serverTime ? 
+        new Date(position.serverTime).toLocaleString('es-PE') : 
+        'Desconocido';
+    
+    const speed = position.speed ? 
+        Math.round(position.speed * 1.852) : // Convertir nudos a km/h
+        0;
+    
+    const course = position.course ? 
+        Math.round(position.course) : 
+        0;
+    
+    const statusWithTime = position.calculatedStatus ? 
+        getStatusDescription(position.calculatedStatus, new Date(position.serverTime || position.deviceTime)) :
+        getStatusText(position.calculatedStatus || 'unknown');
+    
+    return `
+        <div class="p-2 min-w-64">
+            <h3 class="font-bold text-lg mb-2">${position.deviceName}</h3>
+            <div class="space-y-1 text-sm">
+                <div><strong>Estado:</strong> <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(position.calculatedStatus)}">${statusWithTime}</span></div>
+                <div><strong>Velocidad:</strong> ${speed} km/h</div>
+                <div><strong>Dirección:</strong> ${course}°</div>
+                <div><strong>Coordenadas:</strong> ${position.latitude.toFixed(6)}, ${position.longitude.toFixed(6)}</div>
+                <div><strong>Última actualización:</strong> ${lastUpdate}</div>
+                ${position.address ? `<div><strong>Dirección:</strong> ${position.address}</div>` : ''}
+                ${position.deviceModel ? `<div><strong>Modelo:</strong> ${position.deviceModel}</div>` : ''}
+            </div>
+        </div>
+    `;
+}
+
+// ===== SISTEMA DE SIDEBAR MEJORADO =====
+
+// Actualizar datos del sidebar (filtros, contadores, etc.)
+function updateSidebarData() {
+    console.log('📋 [SIDEBAR] Actualizando datos del sidebar');
+    
+    // Resetear filtros
+    currentPage = 1;
+    searchTerm = '';
+    currentFilter = 'all';
+    
+    // Actualizar contadores
+    updateCounters();
+    
+    // Aplicar filtros y mostrar
+    applyFiltersAndPagination();
+}
+
+// Actualizar contadores de estado
+function updateCounters() {
+    const total = allPositions.length;
+    const online = allPositions.filter(p => p.calculatedStatus === 'online').length;
+    const warning = allPositions.filter(p => p.calculatedStatus === 'warning').length;
+    const offline = allPositions.filter(p => p.calculatedStatus === 'offline').length;
+    
+    document.getElementById('devicesCounter').textContent = `${total} total`;
+    document.getElementById('countAll').textContent = total;
+    document.getElementById('countOnline').textContent = online;
+    document.getElementById('countOffline').textContent = offline + warning; // Offline incluye warning
+    
+    console.log(`📊 [SIDEBAR] Contadores: Total=${total}, Online=${online}, Warning=${warning}, Offline=${offline}`);
+}
+
+// Aplicar filtros y paginación
+function applyFiltersAndPagination() {
+    console.log(`🔍 [SIDEBAR] Aplicando filtros: search="${searchTerm}", filter="${currentFilter}", page=${currentPage}`);
+    
+    // Filtrar por búsqueda
+    let filtered = allPositions.filter(position => {
+        const deviceName = (position.deviceName || '').toLowerCase();
+        return deviceName.includes(searchTerm.toLowerCase());
+    });
+    
+    // Filtrar por estado
+    if (currentFilter !== 'all') {
+        if (currentFilter === 'online') {
+            filtered = filtered.filter(position => position.calculatedStatus === 'online');
+        } else if (currentFilter === 'offline') {
+            // Offline incluye warning y offline
+            filtered = filtered.filter(position => 
+                position.calculatedStatus === 'offline' || position.calculatedStatus === 'warning'
+            );
+        }
+    }
+    
+    filteredPositions = filtered;
+    
+    // Calcular paginación
+    const totalPages = Math.ceil(filteredPositions.length / itemsPerPage);
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const pagePositions = filteredPositions.slice(startIndex, endIndex);
+    
+    // Actualizar UI
+    updateDevicesList(pagePositions);
+    updatePagination(totalPages);
+    updateStates();
+    
+    console.log(`✅ [SIDEBAR] Filtros aplicados: ${filteredPositions.length} resultados, página ${currentPage}/${totalPages}`);
+}
+
+// Actualizar lista de dispositivos (solo la página actual)
+function updateDevicesList(pagePositions) {
+    const devicesList = document.getElementById('devicesList');
+    devicesList.innerHTML = '';
+    
+    pagePositions.forEach(position => {
+        const deviceCard = createDeviceCard(position);
+        devicesList.appendChild(deviceCard);
+    });
+}
+
+// Actualizar estados de visibilidad
+function updateStates() {
+    const devicesList = document.getElementById('devicesList');
+    const emptyState = document.getElementById('devicesEmptyState');
+    const noSearchResults = document.getElementById('noSearchResults');
+    const devicesLoading = document.getElementById('devicesLoading');
+    
+    // Ocultar loading
+    devicesLoading.classList.add('hidden');
+    
+    if (allPositions.length === 0) {
+        // No hay dispositivos en absoluto
+        devicesList.classList.add('hidden');
+        emptyState.classList.remove('hidden');
+        noSearchResults.classList.add('hidden');
+    } else if (filteredPositions.length === 0) {
+        // Hay dispositivos pero no coinciden con filtros
+        devicesList.classList.add('hidden');
+        emptyState.classList.add('hidden');
+        noSearchResults.classList.remove('hidden');
+    } else {
+        // Hay resultados
+        devicesList.classList.remove('hidden');
+        emptyState.classList.add('hidden');
+        noSearchResults.classList.add('hidden');
+    }
+}
+
+// Actualizar paginación
+function updatePagination(totalPages) {
+    const paginationContainer = document.getElementById('paginationContainer');
+    const showingFrom = document.getElementById('showingFrom');
+    const showingTo = document.getElementById('showingTo');
+    const totalResults = document.getElementById('totalResults');
+    const prevPage = document.getElementById('prevPage');
+    const nextPage = document.getElementById('nextPage');
+    const pageNumbers = document.getElementById('pageNumbers');
+    
+    if (totalPages <= 1) {
+        paginationContainer.classList.add('hidden');
+        return;
+    }
+    
+    paginationContainer.classList.remove('hidden');
+    
+    // Actualizar información de resultados
+    const startIndex = (currentPage - 1) * itemsPerPage + 1;
+    const endIndex = Math.min(currentPage * itemsPerPage, filteredPositions.length);
+    
+    showingFrom.textContent = startIndex;
+    showingTo.textContent = endIndex;
+    totalResults.textContent = filteredPositions.length;
+    
+    // Actualizar botones prev/next
+    prevPage.disabled = currentPage === 1;
+    nextPage.disabled = currentPage === totalPages;
+    
+    // Generar números de página
+    pageNumbers.innerHTML = '';
+    
+    const maxVisiblePages = 5;
+    let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+    let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+    
+    if (endPage - startPage + 1 < maxVisiblePages) {
+        startPage = Math.max(1, endPage - maxVisiblePages + 1);
+    }
+    
+    for (let i = startPage; i <= endPage; i++) {
+        const pageBtn = document.createElement('button');
+        pageBtn.textContent = i;
+        pageBtn.className = `px-3 py-1 text-sm border rounded-md ${
+            i === currentPage 
+                ? 'bg-indigo-600 text-white border-indigo-600' 
+                : 'border-gray-300 hover:bg-gray-50'
+        }`;
+        pageBtn.onclick = () => goToPage(i);
+        pageNumbers.appendChild(pageBtn);
+    }
+}
+
+// Crear tarjeta de dispositivo con diseño mejorado
+function createDeviceCard(position) {
+    const card = document.createElement('div');
+    card.className = 'bg-white rounded-xl p-4 cursor-pointer hover:shadow-lg transition-all duration-300 border-2 border-gray-100 hover:border-indigo-300 transform hover:scale-[1.02] hover:-translate-y-1 fade-in';
+    card.onclick = () => centerMapOnDevice(position);
+    
+    const lastUpdate = position.serverTime ? 
+        new Date(position.serverTime).toLocaleString('es-PE') : 
+        'Desconocido';
+    
+    const speed = position.speed ? 
+        Math.round(position.speed * 1.852) : 
+        0;
+    
+    card.innerHTML = `
+        <div class="flex items-center justify-between mb-3">
+            <h4 class="font-semibold text-gray-900 text-base">${position.deviceName}</h4>
+            <span class="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-bold ${getStatusColor(position.calculatedStatus)} shadow-sm">
+                ${getStatusText(position.calculatedStatus)}
+            </span>
+        </div>
+        <div class="space-y-2">
+            <div class="flex items-center space-x-2 text-sm text-gray-700">
+                <span class="text-lg">🚗</span>
+                <span class="font-medium">${speed} km/h</span>
+            </div>
+            <div class="flex items-center space-x-2 text-xs text-gray-500">
+                <span>📍</span>
+                <span class="font-mono">${position.latitude.toFixed(4)}, ${position.longitude.toFixed(4)}</span>
+            </div>
+            <div class="flex items-center space-x-2 text-xs text-gray-500">
+                <span>🕒</span>
+                <span>${lastUpdate}</span>
+            </div>
+        </div>
+        <div class="mt-3 pt-3 border-t border-gray-100 flex justify-end">
+            <span class="text-xs text-indigo-600 font-medium hover:text-indigo-700 transition-colors">Ver en mapa →</span>
+        </div>
+    `;
+    
+    return card;
+}
+
+// ===== EVENTOS DEL SIDEBAR =====
+
+// Inicializar eventos del sidebar
+function initializeSidebarEvents() {
+    console.log('🎯 [SIDEBAR] Inicializando eventos');
+    
+    // Evento de búsqueda
+    const searchInput = document.getElementById('deviceSearch');
+    const searchClear = document.getElementById('searchClear');
+    
+    searchInput.addEventListener('input', function(e) {
+        searchTerm = e.target.value;
+        currentPage = 1; // Resetear a primera página
+        
+        // Mostrar/ocultar botón de limpiar
+        if (searchTerm) {
+            searchClear.classList.remove('hidden');
+        } else {
+            searchClear.classList.add('hidden');
+        }
+        
+        applyFiltersAndPagination();
+    });
+    
+    // Botón de limpiar búsqueda
+    searchClear.addEventListener('click', function() {
+        searchInput.value = '';
+        searchTerm = '';
+        currentPage = 1;
+        searchClear.classList.add('hidden');
+        applyFiltersAndPagination();
+    });
+    
+    // Filtros de estado
+    document.getElementById('filterAll').addEventListener('click', () => setFilter('all'));
+    document.getElementById('filterOnline').addEventListener('click', () => setFilter('online'));
+    document.getElementById('filterOffline').addEventListener('click', () => setFilter('offline'));
+    
+    // Botones de paginación
+    document.getElementById('prevPage').addEventListener('click', () => {
+        if (currentPage > 1) {
+            goToPage(currentPage - 1);
+        }
+    });
+    
+    document.getElementById('nextPage').addEventListener('click', () => {
+        const totalPages = Math.ceil(filteredPositions.length / itemsPerPage);
+        if (currentPage < totalPages) {
+            goToPage(currentPage + 1);
+        }
+    });
+}
+
+// Cambiar filtro de estado
+function setFilter(filter) {
+    console.log(`🔍 [SIDEBAR] Cambiando filtro a: ${filter}`);
+    
+    currentFilter = filter;
+    currentPage = 1; // Resetear a primera página
+    
+    // Actualizar estilos de botones
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    
+    document.getElementById(`filter${filter.charAt(0).toUpperCase() + filter.slice(1)}`).classList.add('active');
+    
+    applyFiltersAndPagination();
+}
+
+// Ir a página específica
+function goToPage(page) {
+    console.log(`📄 [SIDEBAR] Navegando a página: ${page}`);
+    
+    currentPage = page;
+    applyFiltersAndPagination();
+    
+    // Scroll al top del sidebar
+    const devicesList = document.getElementById('devicesList');
+    devicesList.scrollTop = 0;
+}
+
+// Centrar mapa en dispositivo y mostrar velocímetro
+function centerMapOnDevice(position) {
+    if (position.valid && position.latitude && position.longitude) {
+        map.setView([position.latitude, position.longitude], 16);
+        
+        // Abrir popup del marcador
+        const marker = markers[position.deviceId];
+        if (marker) {
+            marker.openPopup();
+        }
+        
+        // Mostrar widget de velocímetro
+        showSpeedometerWidget(position);
+    }
+}
+
+// Mostrar widget de velocímetro (simplificado)
+function showSpeedometerWidget(position) {
+    if (!position || !position.deviceId) return;
+    
+    selectedDeviceForSpeedometer = position;
+    
+    // Calcular velocidad en km/h
+    const speed = position.speed ? Math.round(position.speed * 1.852) : 0;
+    
+    // Actualizar velocidad máxima
+    if (speed > speedometerMaxSpeed) {
+        speedometerMaxSpeed = speed;
+    }
+    
+    // Actualizar elementos directamente (sin animación compleja)
+    document.getElementById('speedometerVehicleName').textContent = position.deviceName || `Dispositivo ${position.deviceId}`;
+    document.getElementById('speedValue').textContent = speed;
+    document.getElementById('maxSpeed').textContent = speedometerMaxSpeed;
+    
+    // Actualizar indicador de estado
+    const indicator = document.getElementById('statusIndicatorWidget');
+    indicator.className = `w-2 h-2 rounded-full ${position.calculatedStatus === 'online' ? 'bg-green-500' : position.calculatedStatus === 'warning' ? 'bg-yellow-500' : 'bg-red-500'}`;
+    
+    // Actualizar hora
+    const time = position.serverTime ? new Date(position.serverTime).toLocaleTimeString('es-PE', {hour: '2-digit', minute: '2-digit', second: '2-digit'}) : '--:--:--';
+    document.getElementById('speedLastUpdate').textContent = time;
+    
+    // Mostrar widget
+    const widget = document.getElementById('speedometerWidget');
+    widget.style.transform = 'translateX(0)';
+    widget.style.opacity = '1';
+}
+
+// Cerrar widget de velocímetro
+function closeSpeedometerWidget() {
+    const widget = document.getElementById('speedometerWidget');
+    widget.style.transform = 'translateX(100%)';
+    widget.style.opacity = '0';
+    
+    selectedDeviceForSpeedometer = null;
+    speedometerMaxSpeed = 0;
+}
+
+// Actualizar velocímetro si hay un dispositivo seleccionado
+function updateSpeedometerIfActive() {
+    if (selectedDeviceForSpeedometer) {
+        // Buscar la posición actualizada del dispositivo
+        const updatedPosition = positions.find(p => p.deviceId === selectedDeviceForSpeedometer.deviceId);
+        
+        if (updatedPosition) {
+            showSpeedometerWidget(updatedPosition);
+        }
+    }
+}
+
+// Obtener color de estado
+function getStatusColor(status) {
+    switch (status) {
+        case 'online': return 'bg-green-100 text-green-800';
+        case 'warning': return 'bg-yellow-100 text-yellow-800';
+        case 'offline': return 'bg-gray-100 text-gray-800';
+        default: return 'bg-red-100 text-red-800';
+    }
+}
+
+// Obtener texto de estado
+function getStatusText(status) {
+    switch (status) {
+        case 'online': return 'En línea';
+        case 'warning': return 'Inactivo';
+        case 'offline': return 'Desconectado';
+        default: return 'Desconocido';
+    }
+}
+
+// Actualizar indicador de estado con animaciones mejoradas
+function updateStatus(status, text) {
+    const indicator = document.getElementById('statusIndicator');
+    const statusText = document.getElementById('statusText');
+    
+    indicator.className = 'w-3 h-3 rounded-full transition-all duration-300';
+    
+    switch (status) {
+        case 'online':
+            indicator.classList.add('bg-green-500', 'shadow-lg', 'shadow-green-500/50');
+            indicator.style.animation = 'none';
+            break;
+        case 'loading':
+            indicator.classList.add('bg-yellow-500', 'animate-pulse-enhanced', 'shadow-lg', 'shadow-yellow-500/50');
+            break;
+        case 'error':
+            indicator.classList.add('bg-red-500', 'shadow-lg', 'shadow-red-500/50');
+            indicator.style.animation = 'none';
+            break;
+        default:
+            indicator.classList.add('bg-gray-400', 'animate-pulse');
+    }
+    
+    statusText.textContent = text;
+    statusText.classList.add('transition-all', 'duration-300');
+}
+
+// Configurar auto-refresh
+function setupAutoRefresh() {
+    const autoRefreshCheckbox = document.getElementById('autoRefresh');
+    
+    autoRefreshCheckbox.addEventListener('change', function() {
+        isAutoRefreshEnabled = this.checked;
+        
+        if (isAutoRefreshEnabled) {
+            startAutoRefresh();
+        } else {
+            stopAutoRefresh();
+        }
+    });
+    
+    // Iniciar auto-refresh si está habilitado
+    if (isAutoRefreshEnabled) {
+        startAutoRefresh();
+    }
+}
+
+// Iniciar auto-refresh
+function startAutoRefresh() {
+    stopAutoRefresh(); // Limpiar interval existente
+    
+    autoRefreshInterval = setInterval(async () => {
+        if (isAutoRefreshEnabled) {
+            await refreshPositions();
+        }
+    }, 30000); // Actualizar cada 30 segundos
+    
+    console.log('🔄 [MAP] Auto-refresh iniciado (30s)');
+}
+
+// Detener auto-refresh
+function stopAutoRefresh() {
+    if (autoRefreshInterval) {
+        clearInterval(autoRefreshInterval);
+        autoRefreshInterval = null;
+    }
+    console.log('⏹️ [MAP] Auto-refresh detenido');
+}
+
+// Actualizar posiciones con información completa de dispositivos
+async function refreshPositions() {
+    try {
+        updateStatus('loading', 'Actualizando...');
+        
+        // CORREGIDO: Usar /api/map/data para obtener información completa
+        const response = await fetch('/api/map/data', {
+            method: 'GET',
+            credentials: 'include'
+        });
+        
+        if (!response.ok) {
+            throw new Error(`Error ${response.status}`);
+        }
+        
+        const data = await response.json();
+        
+        // Actualizar posiciones manteniendo filtros actuales
+        positions = data.positions || [];
+        allPositions = [...positions];
+        
+        updateMapMarkers();
+        updateCounters();
+        applyFiltersAndPagination(); // Mantiene filtros y página actual
+        
+        // Actualizar velocímetro si está activo
+        updateSpeedometerIfActive();
+        
+        updateStatus('online', `${positions.length} dispositivos`);
+        
+    } catch (error) {
+        console.error('❌ [MAP] Error actualizando posiciones:', error);
+        updateStatus('error', 'Error actualizando');
+    }
+}
+
+// Refresh manual
+async function refreshMap() {
+    console.log('🔄 [MAP] Refresh manual iniciado');
+    await loadMapData();
+}
+
+// ===== SISTEMA DE REPORTES (PANEL FLOTANTE) =====
+
+// Abrir panel de reportes
+function openReportsModal() {
+    console.log('📊 [REPORTS] Abriendo panel de reportes');
+    console.log('📊 [REPORTS] allPositions:', allPositions);
+    
+    const panel = document.getElementById('reportsPanel');
+    console.log('📊 [REPORTS] Panel element:', panel);
+    
+    if (!panel) {
+        console.error('❌ [REPORTS] No se encontró el elemento reportsPanel');
+        alert('Error: No se encontró el panel de reportes');
+        return;
+    }
+    
+    reportVisible = true;
+    panel.classList.remove('hidden');
+    console.log('📊 [REPORTS] Panel mostrado, clases:', panel.className);
+    console.log('📊 [REPORTS] Panel style:', panel.style.cssText);
+    console.log('📊 [REPORTS] Panel offsetHeight:', panel.offsetHeight);
+    console.log('📊 [REPORTS] Panel offsetWidth:', panel.offsetWidth);
+    
+    // Generar tabla con datos actuales
+    generateReportTable();
+    
+    // Verificar que el panel sea visible
+    setTimeout(() => {
+        const rect = panel.getBoundingClientRect();
+        console.log('📊 [REPORTS] Panel rect:', rect);
+        console.log('📊 [REPORTS] Panel visible:', rect.height > 0 && rect.width > 0);
+    }, 100);
+}
+
+// Cerrar panel de reportes
+function closeReportsPanel() {
+    console.log('📊 [REPORTS] Cerrando panel de reportes');
+    
+    reportVisible = false;
+    document.getElementById('reportsPanel').classList.add('hidden');
+}
+
+// Generar tabla de reportes
+function generateReportTable() {
+    console.log('📊 [REPORTS] Generando tabla de reportes');
+    console.log('📊 [REPORTS] allPositions length:', allPositions.length);
+    
+    // Verificar elementos necesarios
+    const dateTimeElement = document.getElementById('reportDateTime2');
+    const quickCountAllElement = document.getElementById('quickCountAll');
+    
+    console.log('📊 [REPORTS] dateTimeElement:', dateTimeElement);
+    console.log('📊 [REPORTS] quickCountAllElement:', quickCountAllElement);
+    
+    // Actualizar fecha y hora
+    const now = new Date();
+    const dateTimeString = now.toLocaleString('es-PE', {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+    });
+    
+    if (dateTimeElement) {
+        dateTimeElement.textContent = dateTimeString;
+    }
+    
+    // Calcular estadísticas
+    const onlineDevices = allPositions.filter(p => p.calculatedStatus === 'online');
+    const warningDevices = allPositions.filter(p => p.calculatedStatus === 'warning');
+    const offlineDevices = allPositions.filter(p => p.calculatedStatus === 'offline');
+    const totalDevices = allPositions.length;
+    
+    // Actualizar contadores en filtros rápidos
+    document.getElementById('quickCountAll').textContent = totalDevices;
+    document.getElementById('quickCountOnline').textContent = onlineDevices.length;
+    document.getElementById('quickCountOffline').textContent = offlineDevices.length + warningDevices.length;
+    
+    // Actualizar footer
+    document.getElementById('footerTotal').textContent = totalDevices;
+    document.getElementById('footerOnline').textContent = onlineDevices.length;
+    document.getElementById('footerOffline').textContent = offlineDevices.length + warningDevices.length;
+    
+    // Renderizar tabla según filtro actual
+    renderReportTable();
+    
+    console.log(`✅ [REPORTS] Tabla generada: ${onlineDevices.length} online, ${offlineDevices.length} offline`);
+}
+
+// Cambiar filtro rápido
+function setQuickFilter(filter) {
+    console.log(`📊 [REPORTS] Cambiando filtro a: ${filter}`);
+    
+    currentReportFilter = filter;
+    
+    // Actualizar estilos de filtros
+    document.querySelectorAll('.quick-filter').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    
+    document.getElementById(`quickFilter${filter.charAt(0).toUpperCase() + filter.slice(1)}`).classList.add('active');
+    
+    // Renderizar tabla filtrada
+    renderReportTable();
+}
+
+// Renderizar tabla de dispositivos
+function renderReportTable() {
+    const tableBody = document.getElementById('reportTableBody');
+    
+    // Filtrar dispositivos según filtro actual
+    let filteredDevices = allPositions;
+    if (currentReportFilter !== 'all') {
+        if (currentReportFilter === 'online') {
+            filteredDevices = allPositions.filter(p => p.calculatedStatus === 'online');
+        } else if (currentReportFilter === 'offline') {
+            // Offline incluye warning y offline
+            filteredDevices = allPositions.filter(p => 
+                p.calculatedStatus === 'offline' || p.calculatedStatus === 'warning'
+            );
+        }
+    }
+    
+    if (filteredDevices.length === 0) {
+        tableBody.innerHTML = `
+            <tr>
+                <td colspan="7" class="px-4 py-8 text-center text-gray-500">
+                    No hay dispositivos ${currentReportFilter === 'all' ? '' : currentReportFilter === 'online' ? 'conectados' : 'desconectados'}
+                </td>
+            </tr>
+        `;
+        return;
+    }
+    
+    let html = '';
+    filteredDevices.forEach(position => {
+        html += createReportTableRow(position);
+    });
+    
+    tableBody.innerHTML = html;
+}
+
+// Crear fila de tabla para dispositivo
+function createReportTableRow(position) {
+    const deviceName = (position.deviceName && position.deviceName.trim()) 
+        ? position.deviceName 
+        : `Dispositivo ${position.deviceId}`;
+    
+    const deviceType = getDeviceType(position.deviceModel || '');
+    const simCard = getSimCard(position.attributes || {});
+    const timeAgo = position.serverTime ? getTimeAgo(new Date(position.serverTime)) : 'Desconocido';
+    
+    const statusIcon = position.calculatedStatus === 'online' ? '🟢' : 
+                      position.calculatedStatus === 'warning' ? '🟡' : '🔴';
+    const statusText = position.calculatedStatus === 'online' ? 'Online' : 
+                      position.calculatedStatus === 'warning' ? 'Inactivo' : 'Offline';
+    const statusColor = position.calculatedStatus === 'online' ? 'green' : 
+                       position.calculatedStatus === 'warning' ? 'yellow' : 'red';
+    
+    const location = (position.latitude && position.longitude) 
+        ? `${position.latitude.toFixed(4)}, ${position.longitude.toFixed(4)}`
+        : 'Sin ubicación';
+    
+    return `
+        <tr class="hover:bg-gray-50">
+            <td class="px-4 py-3 whitespace-nowrap">
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-${statusColor}-100 text-${statusColor}-800">
+                    ${statusIcon} ${statusText}
+                </span>
+            </td>
+            <td class="px-4 py-3 whitespace-nowrap">
+                <div class="text-sm font-medium text-gray-900">${deviceName}</div>
+                <div class="text-sm text-gray-500">ID: ${position.deviceId}</div>
+            </td>
+            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                ${deviceType}
+            </td>
+            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                ${simCard}
+            </td>
+            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                ${timeAgo}
+            </td>
+            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                ${location}
+            </td>
+            <td class="px-4 py-3 whitespace-nowrap text-center">
+                <button onclick="centerMapOnDeviceFromReport(${position.deviceId})" 
+                        class="text-indigo-600 hover:text-indigo-900 text-sm font-medium">
+                    Ver
+                </button>
+            </td>
+        </tr>
+    `;
+}
+
+// Obtener tipo de dispositivo (simulado)
+function getDeviceType(model) {
+    if (!model) return 'GPS Tracker';
+    
+    const modelLower = model.toLowerCase();
+    if (modelLower.includes('car') || modelLower.includes('auto')) return 'Automóvil';
+    if (modelLower.includes('truck') || modelLower.includes('camión')) return 'Camión';
+    if (modelLower.includes('moto')) return 'Motocicleta';
+    if (modelLower.includes('bus')) return 'Autobús';
+    
+    return model || 'GPS Tracker';
+}
+
+// Obtener SIM Card (simulado)
+function getSimCard(attributes) {
+    // En producción, esto vendría de los atributos del dispositivo
+    if (attributes.sim) return attributes.sim;
+    if (attributes.phone) return attributes.phone;
+    
+    // Simular número de SIM
+    return `98765${Math.floor(Math.random() * 10000).toString().padStart(4, '0')}`;
+}
+
+// Calcular tiempo transcurrido
+function getTimeAgo(date) {
+    const now = new Date();
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMins / 60);
+    const diffDays = Math.floor(diffHours / 24);
+    
+    if (diffMins < 1) return 'Ahora mismo';
+    if (diffMins < 60) return `Hace ${diffMins} min`;
+    if (diffHours < 24) return `Hace ${diffHours} hora${diffHours > 1 ? 's' : ''}`;
+    return `Hace ${diffDays} día${diffDays > 1 ? 's' : ''}`;
+}
+
+// Centrar mapa en dispositivo desde reporte
+function centerMapOnDeviceFromReport(deviceId) {
+    console.log(`🗺️ [REPORTS] Centrando mapa en dispositivo: ${deviceId}`);
+    
+    const position = allPositions.find(p => p.deviceId === deviceId);
+    if (position && position.latitude && position.longitude) {
+        // Centrar mapa (sin cerrar panel)
+        map.setView([position.latitude, position.longitude], 16);
+        
+        // Abrir popup del marcador
+        const marker = markers[deviceId];
+        if (marker) {
+            marker.openPopup();
+        }
+    }
+}
+
+// Actualizar datos de la tabla
+function refreshReportTable() {
+    console.log('📊 [REPORTS] Actualizando tabla de reportes');
+    
+    // Regenerar tabla con datos actuales
+    generateReportTable();
+}
+
+// Descargar reporte en Excel
+function downloadExcelReport() {
+    console.log('📊 [EXCEL] Generando reporte Excel');
+    
+    if (allPositions.length === 0) {
+        alert('No hay datos para exportar');
+        return;
+    }
+    
+    try {
+        // Preparar datos para Excel
+        const excelData = [];
+        
+        // Header
+        excelData.push([
+            'Estado',
+            'Dispositivo',
+            'ID Dispositivo',
+            'Tipo',
+            'SIM Card',
+            'Última Conexión',
+            'Fecha Exacta',
+            'Latitud',
+            'Longitud',
+            'Velocidad (km/h)',
+            'Dirección (°)',
+            'Modelo',
+            'Dirección Física'
+        ]);
+        
+        // Datos de dispositivos
+        allPositions.forEach(position => {
+            const deviceName = (position.deviceName && position.deviceName.trim()) 
+                ? position.deviceName 
+                : `Dispositivo ${position.deviceId}`;
+            
+            const deviceType = getDeviceType(position.deviceModel || '');
+            const simCard = getSimCard(position.attributes || {});
+            const statusText = position.deviceStatus === 'online' ? 'En Línea' : 'Desconectado';
+            
+            const lastUpdate = position.serverTime ? 
+                new Date(position.serverTime).toLocaleString('es-PE') : 
+                'Desconocido';
+            
+            const timeAgo = position.serverTime ? 
+                getTimeAgo(new Date(position.serverTime)) : 
+                'Desconocido';
+            
+            const speed = position.speed ? 
+                Math.round(position.speed * 1.852) : // Convertir nudos a km/h
+                0;
+            
+            const course = position.course ? 
+                Math.round(position.course) : 
+                0;
+            
+            excelData.push([
+                statusText,
+                deviceName,
+                position.deviceId,
+                deviceType,
+                simCard,
+                timeAgo,
+                lastUpdate,
+                position.latitude || 'N/A',
+                position.longitude || 'N/A',
+                speed,
+                course,
+                position.deviceModel || 'N/A',
+                position.address || 'N/A'
+            ]);
+        });
+        
+        // Crear workbook
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.aoa_to_sheet(excelData);
+        
+        // Configurar anchos de columnas
+        const colWidths = [
+            { wch: 12 }, // Estado
+            { wch: 20 }, // Dispositivo
+            { wch: 12 }, // ID
+            { wch: 15 }, // Tipo
+            { wch: 15 }, // SIM Card
+            { wch: 18 }, // Última Conexión
+            { wch: 20 }, // Fecha Exacta
+            { wch: 12 }, // Latitud
+            { wch: 12 }, // Longitud
+            { wch: 15 }, // Velocidad
+            { wch: 12 }, // Dirección
+            { wch: 15 }, // Modelo
+            { wch: 30 }  // Dirección Física
+        ];
+        ws['!cols'] = colWidths;
+        
+        // Estilo para header
+        const headerStyle = {
+            font: { bold: true, color: { rgb: "FFFFFF" } },
+            fill: { fgColor: { rgb: "4F46E5" } },
+            alignment: { horizontal: "center" }
+        };
+        
+        // Aplicar estilo al header (primera fila)
+        for (let col = 0; col < excelData[0].length; col++) {
+            const cellRef = XLSX.utils.encode_cell({ r: 0, c: col });
+            if (!ws[cellRef]) ws[cellRef] = {};
+            ws[cellRef].s = headerStyle;
+        }
+        
+        // Agregar hoja al workbook
+        XLSX.utils.book_append_sheet(wb, ws, "Reporte Dispositivos");
+        
+        // Agregar hoja de resumen
+        const summaryData = [
+            ['RESUMEN DEL REPORTE'],
+            [''],
+            ['Fecha de Generación:', new Date().toLocaleString('es-PE')],
+            ['Total de Dispositivos:', allPositions.length],
+            ['Dispositivos En Línea:', allPositions.filter(p => p.deviceStatus === 'online').length],
+            ['Dispositivos Desconectados:', allPositions.filter(p => p.deviceStatus === 'offline').length],
+            [''],
+            ['ESTADÍSTICAS POR TIPO'],
+            [''],
+        ];
+        
+        // Calcular estadísticas por tipo
+        const typeStats = {};
+        allPositions.forEach(position => {
+            const type = getDeviceType(position.deviceModel || '');
+            if (!typeStats[type]) {
+                typeStats[type] = { total: 0, online: 0, offline: 0 };
+            }
+            typeStats[type].total++;
+            if (position.deviceStatus === 'online') {
+                typeStats[type].online++;
+            } else {
+                typeStats[type].offline++;
+            }
+        });
+        
+        Object.entries(typeStats).forEach(([type, stats]) => {
+            summaryData.push([type + ':', `Total: ${stats.total}, En Línea: ${stats.online}, Desconectados: ${stats.offline}`]);
+        });
+        
+        const summaryWs = XLSX.utils.aoa_to_sheet(summaryData);
+        summaryWs['!cols'] = [{ wch: 25 }, { wch: 40 }];
+        
+        // Estilo para título del resumen
+        const titleStyle = {
+            font: { bold: true, size: 16, color: { rgb: "1F2937" } },
+            alignment: { horizontal: "center" }
+        };
+        
+        if (summaryWs['A1']) {
+            summaryWs['A1'].s = titleStyle;
+        }
+        
+        XLSX.utils.book_append_sheet(wb, summaryWs, "Resumen");
+        
+        // Generar nombre de archivo con fecha
+        const now = new Date();
+        const dateStr = now.toISOString().split('T')[0]; // YYYY-MM-DD
+        const timeStr = now.toTimeString().split(' ')[0].replace(/:/g, '-'); // HH-MM-SS
+        const filename = `Reporte_Dispositivos_${dateStr}_${timeStr}.xlsx`;
+        
+        // Descargar archivo
+        XLSX.writeFile(wb, filename);
+        
+        console.log('✅ [EXCEL] Reporte Excel generado:', filename);
+        
+        // Mostrar notificación de éxito
+        showNotification('✅ Reporte Excel descargado exitosamente', 'success');
+        
+    } catch (error) {
+        console.error('❌ [EXCEL] Error generando reporte:', error);
+        alert('Error al generar el reporte Excel: ' + error.message);
+    }
+}
+
+// Mostrar notificación temporal con diseño mejorado
+function showNotification(message, type = 'info') {
+    // Crear elemento de notificación
+    const notification = document.createElement('div');
+    const bgColor = type === 'success' ? 'from-green-500 to-emerald-600' : 
+                    type === 'error' ? 'from-red-500 to-rose-600' : 
+                    'from-blue-500 to-indigo-600';
+    
+    const icon = type === 'success' ? '✓' : 
+                 type === 'error' ? '✕' : 
+                 'ℹ';
+    
+    notification.className = `fixed top-4 right-4 px-6 py-4 rounded-xl shadow-2xl z-50 transition-all duration-300 transform translate-x-full opacity-0 bg-gradient-to-r ${bgColor} text-white border-2 border-white/20`;
+    notification.innerHTML = `
+        <div class="flex items-center space-x-3">
+            <div class="flex-shrink-0 w-8 h-8 flex items-center justify-center bg-white/20 rounded-full font-bold text-lg">
+                ${icon}
+            </div>
+            <span class="font-medium">${message}</span>
+        </div>
+    `;
+    
+    // Agregar al DOM
+    document.body.appendChild(notification);
+    
+    // Animar entrada con bounce
+    setTimeout(() => {
+        notification.style.transform = 'translateX(0)';
+        notification.style.opacity = '1';
+    }, 50);
+    
+    // Añadir efecto de hover
+    notification.addEventListener('mouseenter', () => {
+        notification.style.transform = 'translateX(-4px) scale(1.05)';
+    });
+    
+    notification.addEventListener('mouseleave', () => {
+        notification.style.transform = 'translateX(0) scale(1)';
+    });
+    
+    // Remover después de 4 segundos con animación mejorada
+    setTimeout(() => {
+        notification.style.transform = 'translateX(100%) scale(0.9)';
+        notification.style.opacity = '0';
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.parentNode.removeChild(notification);
+            }
+        }, 300);
+    }, 4000);
+}
+
+// Notificación específica para geocercas
+function showGeofenceNotification(message, type = 'info') {
+    const notification = document.createElement('div');
+    notification.className = `fixed top-20 right-4 px-4 py-3 rounded-lg shadow-lg z-50 transition-all duration-300 transform translate-x-full opacity-0 ${
+        type === 'success' ? 'bg-purple-500 text-white border-l-4 border-purple-300' : 
+        type === 'error' ? 'bg-red-500 text-white border-l-4 border-red-300' : 
+        'bg-blue-500 text-white border-l-4 border-blue-300'
+    }`;
+    
+    notification.innerHTML = `
+        <div class="flex items-center space-x-3">
+            <div class="flex-shrink-0">
+                ${
+                    type === 'success' ? 
+                    '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>' :
+                    type === 'error' ? 
+                    '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>' :
+                    '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>'
+                }
+            </div>
+            <div class="flex-1">
+                <p class="text-sm font-medium">${message}</p>
+                <p class="text-xs opacity-90 mt-1">🔷 Geocercas</p>
+            </div>
+        </div>
+    `;
+    
+    // Agregar al DOM
+    document.body.appendChild(notification);
+    
+    // Animar entrada
+    setTimeout(() => {
+        notification.style.transform = 'translateX(0)';
+        notification.style.opacity = '1';
+    }, 100);
+    
+    // Remover después de 3 segundos
+    setTimeout(() => {
+        notification.style.transform = 'translateX(100%)';
+        notification.style.opacity = '0';
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.parentNode.removeChild(notification);
+            }
+        }, 300);
+    }, 3000);
+}
+
+// Cerrar panel con ESC
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape' && reportVisible) {
+        closeReportsPanel();
+    }
+    if (e.key === 'Escape' && mapActionsDropdownOpen) {
+        closeMapActionsDropdown();
+    }
+});
+
+// ===== SISTEMA DE DROPDOWN DE ACCIONES DEL MAPA =====
+
+// Toggle dropdown de acciones del mapa
+function toggleMapActionsDropdown() {
+    const dropdown = document.getElementById('mapActionsMenu');
+    const arrow = document.getElementById('dropdownArrow');
+    
+    if (mapActionsDropdownOpen) {
+        closeMapActionsDropdown();
+    } else {
+        openMapActionsDropdown();
+    }
+}
+
+// Abrir dropdown
+function openMapActionsDropdown() {
+    const dropdown = document.getElementById('mapActionsMenu');
+    const arrow = document.getElementById('dropdownArrow');
+    
+    dropdown.classList.remove('hidden');
+    
+    // Animar entrada
+    setTimeout(() => {
+        dropdown.classList.remove('opacity-0', 'scale-95');
+        dropdown.classList.add('opacity-100', 'scale-100');
+        arrow.style.transform = 'rotate(180deg)';
+    }, 10);
+    
+    mapActionsDropdownOpen = true;
+    
+    // Actualizar texto de vista actual en el dropdown
+    updateCurrentViewTextInDropdown();
+    
+    console.log('🔽 [DROPDOWN] Dropdown de acciones del mapa abierto');
+}
+
+// Cerrar dropdown
+function closeMapActionsDropdown() {
+    const dropdown = document.getElementById('mapActionsMenu');
+    const arrow = document.getElementById('dropdownArrow');
+    
+    dropdown.classList.remove('opacity-100', 'scale-100');
+    dropdown.classList.add('opacity-0', 'scale-95');
+    arrow.style.transform = 'rotate(0deg)';
+    
+    // Ocultar después de la animación
+    setTimeout(() => {
+        dropdown.classList.add('hidden');
+    }, 200);
+    
+    mapActionsDropdownOpen = false;
+    
+    console.log('🔼 [DROPDOWN] Dropdown de acciones del mapa cerrado');
+}
+
+// Actualizar texto de vista actual en el dropdown
+function updateCurrentViewTextInDropdown() {
+    const currentViewElement = document.getElementById('currentViewText');
+    const dropdownViewElement = document.getElementById('currentViewTextDropdown');
+    
+    if (currentViewElement && dropdownViewElement) {
+        const currentView = currentViewElement.textContent || 'Estándar';
+        dropdownViewElement.textContent = `Vista actual: ${currentView}`;
+    }
+}
+
+// Cerrar dropdown al hacer clic fuera
+document.addEventListener('click', function(event) {
+    const dropdown = document.getElementById('mapActionsDropdown');
+    
+    if (mapActionsDropdownOpen && dropdown && !dropdown.contains(event.target)) {
+        closeMapActionsDropdown();
+    }
+});
+
+// Función placeholder para configuración del mapa
+function openMapSettings() {
+    console.log('⚙️ [SETTINGS] Abriendo configuración del mapa');
+    
+    // Crear modal de configuración
+    const modal = document.createElement('div');
+    modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center';
+    modal.style.zIndex = '10003';
+    modal.innerHTML = `
+        <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-semibold text-gray-900">⚙️ Configuración del Mapa</h3>
+                <button onclick="this.closest('.fixed').remove()" class="text-gray-400 hover:text-gray-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Intervalo de actualización automática</label>
+                    <select class="w-full border border-gray-300 rounded-md px-3 py-2">
+                        <option value="30">30 segundos</option>
+                        <option value="60">1 minuto</option>
+                        <option value="120">2 minutos</option>
+                        <option value="300">5 minutos</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="flex items-center space-x-2">
+                        <input type="checkbox" class="rounded" checked>
+                        <span class="text-sm text-gray-700">Mostrar tooltips en marcadores</span>
+                    </label>
+                </div>
+                <div>
+                    <label class="flex items-center space-x-2">
+                        <input type="checkbox" class="rounded" checked>
+                        <span class="text-sm text-gray-700">Animar movimiento de vehículos</span>
+                    </label>
+                </div>
+                <div>
+                    <label class="flex items-center space-x-2">
+                        <input type="checkbox" class="rounded">
+                        <span class="text-sm text-gray-700">Modo nocturno automático</span>
+                    </label>
+                </div>
+            </div>
+            <div class="flex justify-end space-x-3 mt-6">
+                <button onclick="this.closest('.fixed').remove()" class="px-4 py-2 text-gray-600 hover:text-gray-800">Cancelar</button>
+                <button onclick="saveMapSettings(); this.closest('.fixed').remove();" class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700">Guardar</button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    // Animar entrada
+    setTimeout(() => {
+        modal.style.opacity = '1';
+    }, 10);
+}
+
+// Función placeholder para guardar configuración
+function saveMapSettings() {
+    console.log('💾 [SETTINGS] Guardando configuración del mapa');
+    showNotification('⚙️ Configuración guardada exitosamente', 'success');
+}
+
+// Mejorar la función toggleQuickView para actualizar el dropdown
+const originalToggleQuickView = window.toggleQuickView;
+if (typeof originalToggleQuickView === 'function') {
+    window.toggleQuickView = function() {
+        originalToggleQuickView();
+        updateCurrentViewTextInDropdown();
+    };
+} else {
+    // Función placeholder si no existe
+    window.toggleQuickView = function() {
+        console.log('🌍 [VIEW] Cambiando vista del mapa');
+        
+        const currentViewElement = document.getElementById('currentViewText');
+        if (currentViewElement) {
+            const views = ['Estándar', 'Satélite', 'Topográfico', 'Oscuro'];
+            const currentIndex = views.indexOf(currentViewElement.textContent);
+            const nextIndex = (currentIndex + 1) % views.length;
+            currentViewElement.textContent = views[nextIndex];
+            
+            updateCurrentViewTextInDropdown();
+            
+            showNotification(`🌍 Vista cambiada a: ${views[nextIndex]}`, 'info');
+        }
+    };
+}
+
+// ===== SISTEMA DE GEOCERCAS =====
+
+// Helper para obtener visibilidad de geocerca
+function getGeofenceVisibility(geofence) {
+    if (geofence.attributes && geofence.attributes.visibleOnMap !== undefined) {
+        return geofence.attributes.visibleOnMap;
+    }
+    return true; // Por defecto visible
+}
+
+// Cargar geocercas del servidor
+async function loadGeofences() {
+    try {
+        console.log('🔷 [GEOFENCES] Cargando geocercas');
+        
+        const response = await fetch('/api/map/geofences', {
+            method: 'GET',
+            credentials: 'include'
+        });
+        
+        if (!response.ok) {
+            throw new Error(`Error ${response.status}: ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        console.log('✅ [GEOFENCES] Geocercas cargadas:', data);
+        
+        const previousCount = geofences.length;
+        geofences = data.geofences || [];
+        
+        // Mostrar geocercas en el mapa
+        displayGeofences();
+        
+        // Log detallado de cambios
+        if (previousCount !== geofences.length) {
+            console.log(`🔄 [GEOFENCES] Cantidad de geocercas cambió: ${previousCount} → ${geofences.length}`);
+        }
+        
+        console.log(`✅ [GEOFENCES] ${geofences.length} geocercas procesadas`);
+        
+    } catch (error) {
+        console.error('❌ [GEOFENCES] Error cargando geocercas:', error);
+    }
+}
+
+// Mostrar geocercas en el mapa (solo las visibles)
+function displayGeofences() {
+    console.log('🗺️ [GEOFENCES] Mostrando geocercas en el mapa');
+    
+    // Limpiar capa anterior si existe
+    if (geofenceLayer) {
+        map.removeLayer(geofenceLayer);
+    }
+    
+    // Crear nueva capa de geocercas
+    geofenceLayer = L.layerGroup();
+    
+    // Filtrar solo geocercas visibles
+    const visibleGeofences = geofences.filter(geofence => {
+        const isVisible = getGeofenceVisibility(geofence);
+        console.log(`🔍 [GEOFENCES] Geocerca ${geofence.name} (ID: ${geofence.id}): visible=${isVisible}`);
+        return isVisible;
+    });
+    
+    console.log(`🔷 [GEOFENCES] Total geocercas: ${geofences.length}, Visibles: ${visibleGeofences.length}`);
+    
+    visibleGeofences.forEach(geofence => {
+        try {
+            const leafletGeofence = createLeafletGeofence(geofence);
+            if (leafletGeofence) {
+                geofenceLayer.addLayer(leafletGeofence);
+            }
+        } catch (error) {
+            console.error(`❌ [GEOFENCES] Error creando geocerca ${geofence.name}:`, error);
+        }
+    });
+    
+    // Agregar capa al mapa si está visible
+    if (geofencesVisible) {
+        map.addLayer(geofenceLayer);
+    }
+    
+    console.log(`✅ [GEOFENCES] ${visibleGeofences.length} geocercas visibles mostradas en el mapa`);
+    
+    // Actualizar botón de toggle si es necesario
+    updateGeofenceToggleButton();
+}
+
+// Crear geocerca de Leaflet según el tipo
+function createLeafletGeofence(geofence) {
+    const geometry = geofence.geometry;
+    
+    if (!geometry) {
+        console.warn(`⚠️ [GEOFENCES] Geocerca ${geofence.name} sin geometría`);
+        return null;
+    }
+    
+    let leafletObject = null;
+    
+    switch (geometry.type) {
+        case 'polygon':
+            leafletObject = createPolygonGeofence(geofence);
+            break;
+        case 'circle':
+            leafletObject = createCircleGeofence(geofence);
+            break;
+        case 'linestring':
+            leafletObject = createLineGeofence(geofence);
+            break;
+        default:
+            console.warn(`⚠️ [GEOFENCES] Tipo de geocerca no soportado: ${geometry.type}`);
+            return null;
+    }
+    
+    if (leafletObject) {
+        // Agregar popup con información
+        const popupContent = createGeofencePopup(geofence);
+        leafletObject.bindPopup(popupContent);
+        
+        // Agregar tooltip con nombre
+        leafletObject.bindTooltip(geofence.name, {
+            permanent: false,
+            direction: 'center',
+            className: 'geofence-tooltip'
+        });
+    }
+    
+    return leafletObject;
+}
+
+// Crear polígono
+function createPolygonGeofence(geofence) {
+    const coordinates = geofence.geometry.coordinates;
+    
+    if (!coordinates || coordinates.length === 0) {
+        return null;
+    }
+    
+    // Convertir coordenadas [lng, lat] a [lat, lng] para Leaflet
+    const latLngs = coordinates.map(coord => [coord[1], coord[0]]);
+    
+    return L.polygon(latLngs, {
+        color: '#3388ff',
+        weight: 2,
+        opacity: 0.8,
+        fillColor: '#3388ff',
+        fillOpacity: 0.2,
+        className: 'geofence-polygon'
+    });
+}
+
+// Crear círculo
+function createCircleGeofence(geofence) {
+    const center = geofence.geometry.center;
+    const radius = geofence.geometry.radius;
+    
+    if (!center || !radius) {
+        return null;
+    }
+    
+    return L.circle([center.lat, center.lng], {
+        radius: radius,
+        color: '#ff6b35',
+        weight: 2,
+        opacity: 0.8,
+        fillColor: '#ff6b35',
+        fillOpacity: 0.2,
+        className: 'geofence-circle'
+    });
+}
+
+// Crear línea
+function createLineGeofence(geofence) {
+    const coordinates = geofence.geometry.coordinates;
+    
+    if (!coordinates || coordinates.length < 2) {
+        return null;
+    }
+    
+    // Convertir coordenadas [lng, lat] a [lat, lng] para Leaflet
+    const latLngs = coordinates.map(coord => [coord[1], coord[0]]);
+    
+    return L.polyline(latLngs, {
+        color: '#9b59b6',
+        weight: 3,
+        opacity: 0.8,
+        className: 'geofence-line'
+    });
+}
+
+// Crear contenido del popup de geocerca
+function createGeofencePopup(geofence) {
+    const typeText = {
+        'polygon': 'Polígono',
+        'circle': 'Círculo',
+        'linestring': 'Línea'
+    };
+    
+    let geometryInfo = '';
+    if (geofence.geometry.type === 'circle') {
+        geometryInfo = `<div><strong>Radio:</strong> ${Math.round(geofence.geometry.radius)} metros</div>`;
+    }
+    
+    return `
+        <div class="p-2 min-w-48">
+            <h3 class="font-bold text-lg mb-2">${geofence.name}</h3>
+            <div class="space-y-1 text-sm">
+                <div><strong>Tipo:</strong> ${typeText[geofence.geometry.type] || geofence.geometry.type}</div>
+                ${geofence.description ? `<div><strong>Descripción:</strong> ${geofence.description}</div>` : ''}
+                ${geometryInfo}
+                <div><strong>ID:</strong> ${geofence.id}</div>
+            </div>
+        </div>
+    `;
+}
+
+// Toggle visibilidad de geocercas
+function toggleGeofences() {
+    geofencesVisible = !geofencesVisible;
+    
+    if (geofenceLayer) {
+        if (geofencesVisible) {
+            map.addLayer(geofenceLayer);
+            console.log('✅ [GEOFENCES] Geocercas mostradas');
+        } else {
+            map.removeLayer(geofenceLayer);
+            console.log('🙈 [GEOFENCES] Geocercas ocultadas');
+        }
+    }
+    
+    // Actualizar botón de control
+    updateGeofenceToggleButton();
+}
+
+// Actualizar botón de control de geocercas
+function updateGeofenceToggleButton() {
+    const button = document.getElementById('geofenceToggle');
+    if (button) {
+        if (geofencesVisible) {
+            button.classList.remove('opacity-50');
+            button.classList.add('bg-blue-600', 'hover:bg-blue-700');
+            button.classList.remove('bg-gray-400', 'hover:bg-gray-500');
+        } else {
+            button.classList.add('opacity-50');
+            button.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+            button.classList.add('bg-gray-400', 'hover:bg-gray-500');
+        }
+    }
+}
+
+// Variables para control de vistas
+let currentViewIndex = 0;
+const quickViews = [
+    { name: 'Estándar', key: '🗺️ Mapa Estándar' },
+    { name: 'Satélite', key: '🛰️ Vista Satélite' },
+    { name: 'Oscuro', key: '🌙 Modo Oscuro' },
+    { name: 'Topográfico', key: '🏔️ Topográfico' }
+];
+
+// Cambio rápido de vista
+function toggleQuickView() {
+    if (!window.mapLayers || !window.mapLayers.base) {
+        console.warn('⚠️ [MAP] Capas no inicializadas aún');
+        return;
+    }
+    
+    // Avanzar al siguiente índice
+    currentViewIndex = (currentViewIndex + 1) % quickViews.length;
+    const newView = quickViews[currentViewIndex];
+    
+    console.log(`🌍 [MAP] Cambiando a vista: ${newView.name}`);
+    
+    // Remover capa actual
+    map.eachLayer(function(layer) {
+        if (layer instanceof L.TileLayer && layer !== geofenceLayer) {
+            map.removeLayer(layer);
+        }
+    });
+    
+    // Agregar nueva capa
+    const newLayer = window.mapLayers.base[newView.key];
+    if (newLayer) {
+        newLayer.addTo(map);
+        
+        // Actualizar texto del botón
+        const textElement = document.getElementById('currentViewText');
+        if (textElement) {
+            textElement.textContent = newView.name;
+        }
+        
+        // Mostrar notificación
+        showGeofenceNotification(`🌍 Vista cambiada a ${newView.name}`, 'info');
+        
+        console.log(`✅ [MAP] Vista cambiada a: ${newView.name}`);
+    } else {
+        console.error(`❌ [MAP] No se encontró la capa: ${newView.key}`);
+    }
+}
+
+// Refrescar geocercas (recargar desde servidor) - MEJORADO
+async function refreshGeofences() {
+    console.log('🔄 [GEOFENCES] Refrescando geocercas desde servidor');
+    
+    const button = document.getElementById('refreshGeofencesBtn');
+    const originalContent = button.innerHTML;
+    
+    try {
+        // Mostrar estado de carga en el botón
+        button.disabled = true;
+        button.classList.add('opacity-75', 'cursor-not-allowed');
+        button.innerHTML = `
+            <svg class="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+            </svg>
+            <span class="hidden sm:inline">Actualizando...</span>
+            <span class="sm:hidden">🔄</span>
+        `;
+        
+        // Cargar geocercas
+        await loadGeofences();
+        
+        // Mostrar notificación de éxito
+        showGeofenceNotification('✅ Geocercas actualizadas', 'success');
+        
+        console.log('✅ [GEOFENCES] Geocercas refrescadas exitosamente');
+        
+    } catch (error) {
+        console.error('❌ [GEOFENCES] Error refrescando geocercas:', error);
+        showGeofenceNotification('❌ Error actualizando geocercas', 'error');
+    } finally {
+        // Restaurar botón
+        setTimeout(() => {
+            button.disabled = false;
+            button.classList.remove('opacity-75', 'cursor-not-allowed');
+            button.innerHTML = originalContent;
+        }, 500); // Pequeña pausa para que se vea el cambio
+    }
+}
+
+// Limpiar al salir de la página
+window.addEventListener('beforeunload', function() {
+    stopAutoRefresh();
+});
+</script>
+
+<style>
+/* Estilos para marcadores de vehículos */
+.custom-vehicle-marker {
+    background: transparent;
+    border: none;
+}
+
+.vehicle-marker-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    pointer-events: auto;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+}
+
+.vehicle-icon-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 50%;
+    padding: 4px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    transition: all 0.3s ease;
+    z-index: 1000;
+}
+
+.vehicle-icon-wrapper svg {
+    display: block;
+    transition: all 0.3s ease;
+}
+
+.vehicle-label {
+    background: rgba(255, 255, 255, 0.95);
+    color: #374151;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 6px;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+    white-space: nowrap;
+    margin-top: 4px;
+    text-align: center;
+    max-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    z-index: 999;
+    transition: all 0.3s ease;
+}
+
+/* Efectos hover para vehículos */
+.vehicle-marker-container:hover .vehicle-icon-wrapper {
+    background: rgba(255, 255, 255, 1);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    transform: scale(1.15) translateY(-2px);
+}
+
+.vehicle-marker-container:hover .vehicle-icon-wrapper svg {
+    transform: scale(1.1);
+}
+
+.vehicle-marker-container:hover .vehicle-label {
+    background: rgba(255, 255, 255, 1);
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.25);
+    transform: scale(1.05) translateY(-1px);
+    color: #1f2937;
+    font-weight: 700;
+}
+
+/* Animación de entrada para nuevos marcadores */
+@keyframes vehicleMarkerAppear {
+    0% {
+        opacity: 0;
+        transform: scale(0.5) translateY(10px);
+    }
+    50% {
+        opacity: 0.8;
+        transform: scale(1.1) translateY(-5px);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+.vehicle-marker-container {
+    animation: vehicleMarkerAppear 0.6s ease-out;
+}
+
+/* Estados especiales para diferentes tipos de vehículos */
+.vehicle-marker-container.moving .vehicle-icon-wrapper {
+    animation: vehiclePulse 2s infinite;
+}
+
+@keyframes vehiclePulse {
+    0%, 100% {
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    }
+    50% {
+        box-shadow: 0 2px 8px rgba(16, 185, 129, 0.4);
+    }
+}
+
+/* Indicador de movimiento */
+.movement-indicator {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    font-size: 8px;
+    animation: movementBlink 1.5s infinite;
+    z-index: 1001;
+}
+
+@keyframes movementBlink {
+    0%, 50% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    51%, 100% {
+        opacity: 0.3;
+        transform: scale(0.8);
+    }
+}
+
+/* Estilos mejorados para filtros del sidebar */
+.filter-btn {
+    background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
+    color: #6b7280;
+    border: 2px solid #e5e7eb;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    position: relative;
+    overflow: hidden;
+}
+
+.filter-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+    transition: left 0.5s;
+}
+
+.filter-btn:hover::before {
+    left: 100%;
+}
+
+.filter-btn:hover {
+    background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+    color: #374151;
+    border-color: #d1d5db;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.filter-btn.active {
+    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+    color: white;
+    border-color: #6366f1;
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+}
+
+.filter-btn.active:hover {
+    background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+    border-color: #4f46e5;
+    box-shadow: 0 6px 16px rgba(99, 102, 241, 0.4);
+}
+
+/* Estilos para tabs de reportes */
+.report-tab {
+    color: #6b7280;
+    border-bottom-color: transparent;
+    transition: all 0.2s ease;
+}
+
+.report-tab:hover {
+    color: #374151;
+    border-bottom-color: #d1d5db;
+}
+
+.report-tab.active {
+    color: #4f46e5;
+    border-bottom-color: #4f46e5;
+}
+
+/* Estilos para filtros rápidos del panel de reportes */
+.quick-filter {
+    background: #f9fafb;
+    color: #6b7280;
+    border: 1px solid #e5e7eb;
+    transition: all 0.2s ease;
+}
+
+.quick-filter:hover {
+    background: #f3f4f6;
+    color: #374151;
+}
+
+.quick-filter.active {
+    background: #4f46e5;
+    color: white;
+    border-color: #4f46e5;
+}
+
+.quick-filter.active:hover {
+    background: #4338ca;
+    border-color: #4338ca;
+}
+
+/* Animaciones mejoradas para panel flotante */
+#reportsPanel {
+    animation: slideDown 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-30px) scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* Animación de pulse mejorada para indicadores */
+@keyframes pulse-enhanced {
+    0%, 100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 0.7;
+        transform: scale(1.1);
+    }
+}
+
+.animate-pulse-enhanced {
+    animation: pulse-enhanced 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Estilos para geocercas */
+.geofence-tooltip {
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 4px 8px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.geofence-polygon {
+    cursor: pointer;
+}
+
+.geofence-circle {
+    cursor: pointer;
+}
+
+.geofence-line {
+    cursor: pointer;
+}
+
+/* Hover effects mejorados para geocercas */
+.geofence-polygon {
+    transition: all 0.3s ease;
+}
+
+.geofence-polygon:hover {
+    fill-opacity: 0.4 !important;
+    filter: drop-shadow(0 0 8px rgba(99, 102, 241, 0.6));
+}
+
+.geofence-circle {
+    transition: all 0.3s ease;
+}
+
+.geofence-circle:hover {
+    fill-opacity: 0.4 !important;
+    filter: drop-shadow(0 0 8px rgba(255, 107, 53, 0.6));
+}
+
+.geofence-line {
+    transition: all 0.3s ease;
+}
+
+.geofence-line:hover {
+    stroke-width: 5 !important;
+    filter: drop-shadow(0 0 8px rgba(155, 89, 182, 0.6));
+}
+
+/* Asegurar que el mapa ocupe todo el espacio con transición suave */
+#map {
+    height: 100%;
+    width: 100%;
+    transition: opacity 0.3s ease-in-out;
+}
+
+/* Scrollbar personalizado */
+.custom-scrollbar::-webkit-scrollbar {
+    width: 8px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, #6366f1 0%, #8b5cf6 100%);
+    border-radius: 10px;
+    transition: background 0.3s;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, #4f46e5 0%, #7c3aed 100%);
+}
+
+/* Animación de fade-in para elementos */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.fade-in {
+    animation: fadeIn 0.4s ease-out;
+}
+
+/* Efecto glassmorphism para paneles */
+.glass-panel {
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+/* Soporte para Firefox scrollbar */
+.custom-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: #6366f1 #f1f5f9;
+}
+
+/* Accesibilidad: Reducir movimiento */
+@media (prefers-reduced-motion: reduce) {
+    .filter-btn,
+    .vehicle-marker-container,
+    .fade-in,
+    .filter-btn::before,
+    #reportsPanel,
+    .animate-pulse,
+    .animate-pulse-enhanced,
+    .animate-spin {
+        animation: none !important;
+        transition: none !important;
+    }
+    
+    .filter-btn:hover,
+    .vehicle-marker-container:hover,
+    *:hover {
+        transform: none !important;
+    }
+}
+
+/* Estilos para el widget de velocímetro simplificado (ovalado) */
+#speedometerWidget {
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.08);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+}
+
+#speedValue {
+    transition: all 0.3s ease;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Estilos para el control de capas de Leaflet */
+.leaflet-control-layers {
+    background: rgba(255, 255, 255, 0.95) !important;
+    border-radius: 8px !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+    border: 1px solid rgba(0, 0, 0, 0.1) !important;
+    backdrop-filter: blur(10px);
+}
+
+.leaflet-control-layers-expanded {
+    padding: 12px !important;
+    min-width: 200px;
+}
+
+.leaflet-control-layers-toggle {
+    background-image: none !important;
+    width: 36px !important;
+    height: 36px !important;
+    background: rgba(255, 255, 255, 0.9) !important;
+    border-radius: 6px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+.leaflet-control-layers-toggle::before {
+    content: '🌍';
+    font-size: 16px;
+    line-height: 1;
+}
+
+.leaflet-control-layers-base label,
+.leaflet-control-layers-overlays label {
+    font-size: 14px !important;
+    font-weight: 500 !important;
+    color: #374151 !important;
+    margin-bottom: 8px !important;
+    display: flex !important;
+    align-items: center !important;
+    cursor: pointer !important;
+    padding: 4px 0 !important;
+    transition: all 0.2s ease !important;
+}
+
+.leaflet-control-layers-base label:hover,
+.leaflet-control-layers-overlays label:hover {
+    color: #1f2937 !important;
+    background: rgba(79, 70, 229, 0.1) !important;
+    border-radius: 4px !important;
+    padding-left: 4px !important;
+}
+
+.leaflet-control-layers-base input,
+.leaflet-control-layers-overlays input {
+    margin-right: 8px !important;
+    transform: scale(1.1) !important;
+}
+
+.leaflet-control-layers-separator {
+    border-top: 1px solid rgba(0, 0, 0, 0.1) !important;
+    margin: 8px 0 !important;
+}
+
+/* Animación para el control de capas */
+.leaflet-control-layers.leaflet-control-layers-expanded {
+    animation: layerControlExpand 0.2s ease-out;
+}
+
+@keyframes layerControlExpand {
+    from {
+        opacity: 0;
+        transform: scale(0.95) translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+/* Estilos para capas de overlay */
+.transport-layer {
+    filter: hue-rotate(240deg) saturate(1.5) brightness(1.1);
+    mix-blend-mode: multiply;
+}
+
+/* Efectos para diferentes capas de overlay */
+.leaflet-layer.transport-layer {
+    transition: opacity 0.3s ease;
+}
+
+.leaflet-layer.transport-layer:hover {
+    opacity: 0.8 !important;
+}
+</style>
+{{end}}

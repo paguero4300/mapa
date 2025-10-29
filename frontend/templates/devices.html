@@ -1,0 +1,434 @@
+{{template "layout.html" .}}
+
+{{define "devices-content"}}
+<div id="devicesContainer" class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+    <!-- Breadcrumb -->
+    <nav class="flex mb-6" aria-label="Breadcrumb">
+        <ol class="inline-flex items-center space-x-1 md:space-x-3">
+            <li class="inline-flex items-center">
+                <a href="/dashboard" class="inline-flex items-center text-sm font-medium text-gray-700 hover:text-indigo-600">
+                    <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"></path>
+                    </svg>
+                    Dashboard
+                </a>
+            </li>
+            <li>
+                <div class="flex items-center">
+                    <svg class="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
+                    </svg>
+                    <span class="ml-1 text-sm font-medium text-gray-500 md:ml-2">Dispositivos</span>
+                </div>
+            </li>
+        </ol>
+    </nav>
+    
+    <!-- Header -->
+    <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+        <div class="flex justify-between items-center">
+            <div class="flex items-center space-x-4">
+                <a href="/dashboard" class="text-gray-400 hover:text-gray-600 transition-colors">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                    </svg>
+                </a>
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-900">📱 Dispositivos GPS</h1>
+                    <p class="text-gray-600 mt-2">Gestiona tus dispositivos de seguimiento GPS</p>
+                </div>
+            </div>
+            <button onclick="openCreateModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                </svg>
+                <span>Nuevo Dispositivo</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Loading State -->
+    <div id="loadingState" class="bg-white rounded-lg shadow-md p-8 text-center">
+        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-500 mx-auto mb-4"></div>
+        <p class="text-gray-600">Cargando dispositivos...</p>
+    </div>
+
+    <!-- Error State -->
+    <div id="errorState" class="bg-red-50 border border-red-200 rounded-lg p-6 mb-6 hidden">
+        <div class="flex items-center">
+            <svg class="h-5 w-5 text-red-400 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            <div>
+                <h3 class="text-red-800 font-medium">Error</h3>
+                <p id="errorMessage" class="text-red-700 text-sm mt-1"></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Devices Table -->
+    <div id="devicesTable" class="bg-white rounded-lg shadow-md overflow-hidden hidden">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <div class="flex justify-between items-center">
+                <h2 class="text-lg font-semibold text-gray-900">Lista de Dispositivos</h2>
+                <span id="devicesCount" class="text-sm text-gray-500">0 dispositivos</span>
+            </div>
+        </div>
+        
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Dispositivo</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Última Actualización</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contacto</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="devicesTableBody" class="bg-white divide-y divide-gray-200">
+                    <!-- Devices will be populated here -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Empty State -->
+    <div id="emptyState" class="bg-white rounded-lg shadow-md p-12 text-center hidden">
+        <svg class="mx-auto h-12 w-12 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+        </svg>
+        <h3 class="text-lg font-medium text-gray-900 mb-2">No hay dispositivos</h3>
+        <p class="text-gray-600 mb-6">Comienza agregando tu primer dispositivo GPS</p>
+        <button onclick="openCreateModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg">
+            Agregar Dispositivo
+        </button>
+    </div>
+</div>
+
+<!-- Create/Edit Modal -->
+<div id="deviceModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
+    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+        <div class="mt-3">
+            <div class="flex justify-between items-center mb-4">
+                <h3 id="modalTitle" class="text-lg font-medium text-gray-900">Nuevo Dispositivo</h3>
+                <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            
+            <form id="deviceForm" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Nombre *</label>
+                    <input type="text" id="deviceName" name="name" required 
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                           placeholder="Ej: Vehículo Principal">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">ID Único *</label>
+                    <input type="text" id="deviceUniqueId" name="uniqueId" required 
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                           placeholder="Ej: 123456789">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Teléfono</label>
+                    <input type="text" id="devicePhone" name="phone" 
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                           placeholder="Ej: +51987654321">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Modelo</label>
+                    <input type="text" id="deviceModel" name="model" 
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                           placeholder="Ej: GT06N">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Contacto</label>
+                    <input type="text" id="deviceContact" name="contact" 
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                           placeholder="Ej: Juan Pérez">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Categoría</label>
+                    <select id="deviceCategory" name="category" 
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <option value="">Seleccionar categoría</option>
+                        <option value="car">Automóvil</option>
+                        <option value="truck">Camión</option>
+                        <option value="motorcycle">Motocicleta</option>
+                        <option value="bus">Autobús</option>
+                        <option value="person">Persona</option>
+                        <option value="other">Otro</option>
+                    </select>
+                </div>
+                
+                <div class="flex justify-end space-x-3 pt-4">
+                    <button type="button" onclick="closeModal()" 
+                            class="px-4 py-2 text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300">
+                        Cancelar
+                    </button>
+                    <button type="submit" id="submitButton"
+                            class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700">
+                        Crear Dispositivo
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// Variables globales
+let devices = [];
+let editingDeviceId = null;
+
+// Inicialización
+document.addEventListener('DOMContentLoaded', function() {
+    if (!window.location.pathname.startsWith('/devices')) {
+        console.log('🚫 [DEVICES] No estamos en página de dispositivos');
+        return;
+    }
+    
+    console.log('📱 [DEVICES] Inicializando página de dispositivos');
+    loadDevices();
+});
+
+// Cargar dispositivos
+async function loadDevices() {
+    try {
+        showLoading();
+        
+        const response = await fetch('/api/devices', {
+            method: 'GET',
+            credentials: 'include'
+        });
+        
+        if (!response.ok) {
+            throw new Error(`Error ${response.status}: ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        devices = data.devices || [];
+        
+        console.log('✅ [DEVICES] Dispositivos cargados:', devices.length);
+        renderDevices();
+        
+    } catch (error) {
+        console.error('❌ [DEVICES] Error cargando dispositivos:', error);
+        showError('Error cargando dispositivos: ' + error.message);
+    }
+}
+
+// Mostrar estado de carga
+function showLoading() {
+    document.getElementById('loadingState').classList.remove('hidden');
+    document.getElementById('devicesTable').classList.add('hidden');
+    document.getElementById('emptyState').classList.add('hidden');
+    document.getElementById('errorState').classList.add('hidden');
+}
+
+// Mostrar error
+function showError(message) {
+    document.getElementById('errorMessage').textContent = message;
+    document.getElementById('errorState').classList.remove('hidden');
+    document.getElementById('loadingState').classList.add('hidden');
+    document.getElementById('devicesTable').classList.add('hidden');
+    document.getElementById('emptyState').classList.add('hidden');
+}
+
+// Renderizar dispositivos
+function renderDevices() {
+    document.getElementById('loadingState').classList.add('hidden');
+    document.getElementById('errorState').classList.add('hidden');
+    
+    if (devices.length === 0) {
+        document.getElementById('emptyState').classList.remove('hidden');
+        document.getElementById('devicesTable').classList.add('hidden');
+        return;
+    }
+    
+    document.getElementById('emptyState').classList.add('hidden');
+    document.getElementById('devicesTable').classList.remove('hidden');
+    document.getElementById('devicesCount').textContent = `${devices.length} dispositivo${devices.length !== 1 ? 's' : ''}`;
+    
+    const tbody = document.getElementById('devicesTableBody');
+    tbody.innerHTML = '';
+    
+    devices.forEach(device => {
+        const row = createDeviceRow(device);
+        tbody.appendChild(row);
+    });
+}
+
+// Crear fila de dispositivo
+function createDeviceRow(device) {
+    const row = document.createElement('tr');
+    row.className = 'hover:bg-gray-50';
+    
+    const statusColor = device.status === 'online' ? 'green' : 'gray';
+    const statusText = device.status === 'online' ? 'En línea' : 'Desconectado';
+    
+    const lastUpdate = device.lastUpdate ? 
+        new Date(device.lastUpdate).toLocaleString('es-PE') : 
+        'Nunca';
+    
+    row.innerHTML = `
+        <td class="px-6 py-4 whitespace-nowrap">
+            <div class="flex items-center">
+                <div class="flex-shrink-0 h-10 w-10">
+                    <div class="h-10 w-10 rounded-full bg-indigo-100 flex items-center justify-center">
+                        <span class="text-indigo-600 font-medium">${device.name.charAt(0).toUpperCase()}</span>
+                    </div>
+                </div>
+                <div class="ml-4">
+                    <div class="text-sm font-medium text-gray-900">${device.name}</div>
+                    <div class="text-sm text-gray-500">ID: ${device.uniqueId}</div>
+                </div>
+            </div>
+        </td>
+        <td class="px-6 py-4 whitespace-nowrap">
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-${statusColor}-100 text-${statusColor}-800">
+                <div class="w-2 h-2 bg-${statusColor}-400 rounded-full mr-1"></div>
+                ${statusText}
+            </span>
+        </td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+            ${lastUpdate}
+        </td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+            <div>${device.contact || '-'}</div>
+            <div class="text-gray-500">${device.phone || '-'}</div>
+        </td>
+        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+            <button onclick="editDevice(${device.id})" class="text-indigo-600 hover:text-indigo-900 mr-3">
+                Editar
+            </button>
+            <button onclick="deleteDevice(${device.id}, '${device.name}')" class="text-red-600 hover:text-red-900">
+                Eliminar
+            </button>
+        </td>
+    `;
+    
+    return row;
+}
+
+// Abrir modal de creación
+function openCreateModal() {
+    editingDeviceId = null;
+    document.getElementById('modalTitle').textContent = 'Nuevo Dispositivo';
+    document.getElementById('submitButton').textContent = 'Crear Dispositivo';
+    document.getElementById('deviceForm').reset();
+    document.getElementById('deviceModal').classList.remove('hidden');
+}
+
+// Editar dispositivo
+function editDevice(deviceId) {
+    const device = devices.find(d => d.id === deviceId);
+    if (!device) return;
+    
+    editingDeviceId = deviceId;
+    document.getElementById('modalTitle').textContent = 'Editar Dispositivo';
+    document.getElementById('submitButton').textContent = 'Actualizar Dispositivo';
+    
+    // Llenar formulario
+    document.getElementById('deviceName').value = device.name || '';
+    document.getElementById('deviceUniqueId').value = device.uniqueId || '';
+    document.getElementById('devicePhone').value = device.phone || '';
+    document.getElementById('deviceModel').value = device.model || '';
+    document.getElementById('deviceContact').value = device.contact || '';
+    document.getElementById('deviceCategory').value = device.category || '';
+    
+    document.getElementById('deviceModal').classList.remove('hidden');
+}
+
+// Cerrar modal
+function closeModal() {
+    document.getElementById('deviceModal').classList.add('hidden');
+    editingDeviceId = null;
+}
+
+// Manejar envío del formulario
+document.getElementById('deviceForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(e.target);
+    const deviceData = {
+        name: formData.get('name'),
+        uniqueId: formData.get('uniqueId'),
+        phone: formData.get('phone'),
+        model: formData.get('model'),
+        contact: formData.get('contact'),
+        category: formData.get('category')
+    };
+    
+    try {
+        const url = editingDeviceId ? `/api/devices/${editingDeviceId}` : '/api/devices';
+        const method = editingDeviceId ? 'PUT' : 'POST';
+        
+        const response = await fetch(url, {
+            method: method,
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            credentials: 'include',
+            body: JSON.stringify(deviceData)
+        });
+        
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || `Error ${response.status}`);
+        }
+        
+        const result = await response.json();
+        console.log('✅ [DEVICES] Dispositivo guardado:', result);
+        
+        closeModal();
+        loadDevices(); // Recargar lista
+        
+    } catch (error) {
+        console.error('❌ [DEVICES] Error guardando dispositivo:', error);
+        alert('Error guardando dispositivo: ' + error.message);
+    }
+});
+
+// Eliminar dispositivo
+async function deleteDevice(deviceId, deviceName) {
+    if (!confirm(`¿Estás seguro de que quieres eliminar el dispositivo "${deviceName}"?`)) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/api/devices/${deviceId}`, {
+            method: 'DELETE',
+            credentials: 'include'
+        });
+        
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || `Error ${response.status}`);
+        }
+        
+        console.log('✅ [DEVICES] Dispositivo eliminado:', deviceId);
+        loadDevices(); // Recargar lista
+        
+    } catch (error) {
+        console.error('❌ [DEVICES] Error eliminando dispositivo:', error);
+        alert('Error eliminando dispositivo: ' + error.message);
+    }
+}
+
+// Cerrar modal al hacer clic fuera
+document.getElementById('deviceModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeModal();
+    }
+});
+</script>
+{{end}}

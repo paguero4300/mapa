@@ -1,0 +1,247 @@
+/* Estilos personalizados adicionales */
+
+/* Animaciones */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.fade-in {
+    animation: fadeIn 0.3s ease-out;
+}
+
+/* Mejoras para formularios */
+.form-input {
+    @apply appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm;
+}
+
+/* Loading states */
+.loading-spinner {
+    @apply animate-spin rounded-full h-4 w-4 border-b-2 border-white;
+}
+
+/* Hover effects */
+.hover-lift {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.hover-lift:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+    .mobile-full {
+        @apply w-full;
+    }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+/* Focus improvements */
+.focus-ring {
+    @apply focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500;
+}
+
+/* Button animations */
+.btn-animate {
+    transition: all 0.2s ease;
+}
+
+.btn-animate:active {
+    transform: scale(0.95);
+}
+
+/* Card shadows */
+.card-shadow {
+    @apply bg-white shadow-lg rounded-lg;
+}
+
+/* Text truncation */
+.text-truncate {
+    @apply truncate;
+}
+
+/* Center flex utilities */
+.flex-center {
+    @apply flex items-center justify-center;
+}
+
+/* Full height */
+.h-full-screen {
+    height: 100vh;
+}
+
+/* Smooth transitions */
+.smooth-transition {
+    transition: all 0.3s ease;
+}
+
+/* Map Actions Dropdown Styles */
+.map-actions-dropdown {
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    z-index: 10000 !important;
+}
+
+/* Ensure dropdown appears above map */
+#mapActionsDropdown {
+    z-index: 10001 !important;
+}
+
+#mapActionsMenu {
+    z-index: 10000 !important;
+}
+
+.dropdown-item {
+    transition: all 0.15s ease;
+}
+
+.dropdown-item:hover {
+    transform: translateX(4px);
+}
+
+/* Quick Action Buttons */
+.quick-action-btn {
+    position: relative;
+    overflow: hidden;
+}
+
+.quick-action-btn::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    transition: width 0.3s ease, height 0.3s ease;
+}
+
+.quick-action-btn:hover::before {
+    width: 100px;
+    height: 100px;
+}
+
+/* Dropdown Animation */
+@keyframes dropdownSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px) scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* Icon Animations */
+.icon-rotate {
+    transition: transform 0.2s ease;
+}
+
+.icon-rotate.rotated {
+    transform: rotate(180deg);
+}
+
+/* Mobile Responsive Improvements */
+@media (max-width: 640px) {
+    .map-actions-dropdown {
+        width: calc(100vw - 2rem);
+        right: 1rem;
+        left: 1rem;
+    }
+    
+    .dropdown-item {
+        padding: 0.75rem;
+    }
+    
+    .quick-action-btn {
+        padding: 0.5rem;
+    }
+}
+
+/* Improved shadows for dropdown */
+.shadow-dropdown {
+    box-shadow: 0 10px 25px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+/* Status indicators */
+.status-indicator {
+    position: relative;
+}
+
+.status-indicator::after {
+    content: '';
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    width: 8px;
+    height: 8px;
+    background: #10b981;
+    border-radius: 50%;
+    border: 2px solid white;
+}
+
+.status-indicator.offline::after {
+    background: #ef4444;
+}
+
+.status-indicator.warning::after {
+    background: #f59e0b;
+}
+
+/* Z-index hierarchy for map overlays */
+.map-overlay {
+    z-index: 9999 !important;
+}
+
+.dropdown-overlay {
+    z-index: 10000 !important;
+}
+
+.modal-overlay {
+    z-index: 10003 !important;
+}
+
+/* Ensure all floating panels appear above map */
+#reportsPanel {
+    z-index: 10002 !important;
+}
+
+/* Leaflet map container should have lower z-index */
+#map {
+    z-index: 1 !important;
+}
+
+/* Leaflet controls should be above map but below our dropdowns */
+.leaflet-control-container {
+    z-index: 1000 !important;
+}
+
+.leaflet-popup {
+    z-index: 1002 !important;
+}
+
+.leaflet-tooltip {
+    z-index: 1001 !important;
+}
