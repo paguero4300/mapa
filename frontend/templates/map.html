@@ -714,9 +714,25 @@ async function loadMapData() {
             map.setView([data.center.latitude, data.center.longitude], data.zoom || 13);
         }
         
-        // Actualizar posiciones y dispositivos
-        positions = data.positions || [];
+        // LIMPIAR Y VALIDAR: Evitar duplicaciones en positions
+        const newPositions = data.positions || [];
+        const uniquePositions = [];
+        const seenDeviceIds = new Set();
+        
+        newPositions.forEach(position => {
+            if (!seenDeviceIds.has(position.deviceId)) {
+                seenDeviceIds.add(position.deviceId);
+                uniquePositions.push(position);
+            } else {
+                console.warn(`⚠️ [MAP] Posición duplicada omitida en loadMapData: ${position.deviceId} - ${position.deviceName}`);
+            }
+        });
+        
+        // Actualizar posiciones y dispositivos (limpiando duplicados)
+        positions = uniquePositions;
         allPositions = [...positions]; // Copia para filtros
+        
+        console.log(`📊 [MAP] Posiciones únicas cargadas: ${positions.length} (de ${newPositions.length} recibidas)`);
         
         updateMapMarkers();
         updateSidebarData();
@@ -905,8 +921,21 @@ function updateCounters() {
 function applyFiltersAndPagination() {
     console.log(`🔍 [SIDEBAR] Aplicando filtros: search="${searchTerm}", filter="${currentFilter}", page=${currentPage}`);
     
+    // VALIDACIÓN: Asegurar que allPositions no tenga duplicados por deviceId
+    const uniquePositions = [];
+    const seenDeviceIds = new Set();
+    
+    allPositions.forEach(position => {
+        if (!seenDeviceIds.has(position.deviceId)) {
+            seenDeviceIds.add(position.deviceId);
+            uniquePositions.push(position);
+        } else {
+            console.warn(`⚠️ [SIDEBAR] Posición duplicada detectada en allPositions: ${position.deviceId} - ${position.deviceName}`);
+        }
+    });
+    
     // Filtrar por búsqueda
-    let filtered = allPositions.filter(position => {
+    let filtered = uniquePositions.filter(position => {
         const deviceName = (position.deviceName || '').toLowerCase();
         return deviceName.includes(searchTerm.toLowerCase());
     });
@@ -917,7 +946,7 @@ function applyFiltersAndPagination() {
             filtered = filtered.filter(position => position.calculatedStatus === 'online');
         } else if (currentFilter === 'offline') {
             // Offline incluye warning y offline
-            filtered = filtered.filter(position => 
+            filtered = filtered.filter(position =>
                 position.calculatedStatus === 'offline' || position.calculatedStatus === 'warning'
             );
         }
@@ -936,18 +965,31 @@ function applyFiltersAndPagination() {
     updatePagination(totalPages);
     updateStates();
     
-    console.log(`✅ [SIDEBAR] Filtros aplicados: ${filteredPositions.length} resultados, página ${currentPage}/${totalPages}`);
+    console.log(`✅ [SIDEBAR] Filtros aplicados: ${filteredPositions.length} resultados (${uniquePositions.length} únicos), página ${currentPage}/${totalPages}`);
 }
 
 // Actualizar lista de dispositivos (solo la página actual)
 function updateDevicesList(pagePositions) {
     const devicesList = document.getElementById('devicesList');
+    
+    // LIMPIAR CONTENEDOR EXISTENTE para evitar duplicación
     devicesList.innerHTML = '';
     
+    // Verificar que no haya elementos duplicados antes de agregar
+    const existingDeviceIds = new Set();
+    
     pagePositions.forEach(position => {
-        const deviceCard = createDeviceCard(position);
-        devicesList.appendChild(deviceCard);
+        // Evitar duplicados por deviceId
+        if (!existingDeviceIds.has(position.deviceId)) {
+            existingDeviceIds.add(position.deviceId);
+            const deviceCard = createDeviceCard(position);
+            devicesList.appendChild(deviceCard);
+        } else {
+            console.warn(`⚠️ [SIDEBAR] Dispositivo duplicado detectado y omitido: ${position.deviceId} - ${position.deviceName}`);
+        }
     });
+    
+    console.log(`✅ [SIDEBAR] Lista actualizada: ${pagePositions.length} dispositivos procesados, ${existingDeviceIds.size} únicos mostrados`);
 }
 
 // Actualizar estados de visibilidad
@@ -1333,9 +1375,25 @@ async function refreshPositions() {
         
         const data = await response.json();
         
-        // Actualizar posiciones manteniendo filtros actuales
-        positions = data.positions || [];
+        // LIMPIAR Y VALIDAR: Evitar duplicaciones en refresh
+        const newPositions = data.positions || [];
+        const uniquePositions = [];
+        const seenDeviceIds = new Set();
+        
+        newPositions.forEach(position => {
+            if (!seenDeviceIds.has(position.deviceId)) {
+                seenDeviceIds.add(position.deviceId);
+                uniquePositions.push(position);
+            } else {
+                console.warn(`⚠️ [MAP] Posición duplicada omitida en refreshPositions: ${position.deviceId} - ${position.deviceName}`);
+            }
+        });
+        
+        // Actualizar posiciones manteniendo filtros actuales (limpiando duplicados)
+        positions = uniquePositions;
         allPositions = [...positions];
+        
+        console.log(`📊 [MAP] Posiciones únicas actualizadas: ${positions.length} (de ${newPositions.length} recibidas)`);
         
         updateMapMarkers();
         updateCounters();
