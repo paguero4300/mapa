@@ -5,6 +5,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"os"
 	"traccar-login/config"
 	"traccar-login/handlers"
 	"traccar-login/middleware"
@@ -35,8 +36,27 @@ func main() {
 
 	// Middleware
 	r.Use(middleware.CORSMiddleware())
-	r.LoadHTMLGlob("frontend/templates/*")
-	r.Static("/static", "frontend/static")
+
+	// Determinar rutas según el entorno y directorio de ejecución
+	if cfg.IsLocalhost {
+		// Para desarrollo local (ejecutando desde backend/ en Windows)
+		r.LoadHTMLGlob("../frontend/templates/*")
+		r.Static("/static", "../frontend/static")
+		log.Printf("🏠 Modo localhost: usando rutas relativas ../frontend/")
+	} else {
+		// Para producción - verificar si estamos ejecutando desde backend/ o desde raíz
+		if _, err := os.Stat("../frontend/templates"); err == nil {
+			// Si existe ../frontend/templates, estamos en backend/
+			r.LoadHTMLGlob("../frontend/templates/*")
+			r.Static("/static", "../frontend/static")
+			log.Printf("🚀 Modo producción (desde backend/): usando rutas relativas ../frontend/")
+		} else {
+			// Si no existe, estamos en directorio raíz (producción Linux)
+			r.LoadHTMLGlob("frontend/templates/*")
+			r.Static("/static", "frontend/static")
+			log.Printf("🚀 Modo producción (desde raíz): usando rutas directas frontend/")
+		}
+	}
 
 	// Ruta principal con verificación de autenticación
 	r.GET("/", func(c *gin.Context) {
